@@ -1,0 +1,55 @@
+{
+	"networks": {
+		"emulator": "127.0.0.1:3569",
+		"mainnet": "access.mainnet.nodes.onflow.org:9000",
+		"sandboxnet": "access.sandboxnet.nodes.onflow.org:9000",
+		"testnet": "access.devnet.nodes.onflow.org:9000"
+	},
+	"accounts": {
+		"emulator-account": {
+			"address": "f8d6e0586b0a20c7",
+			"key": "6115cf42447cede77ae3aa0791940234d8ea448f4f975d0893db3dc76e3abc97"
+		},
+		"emulator-account-2": {
+			"address": "0x01cf0e2f2f715450",
+			"key": "287f4368248a31db860868e702f4283c9404806ce85879b5896f58b5decbb7d3"
+		},
+		"emulator-account-3": {
+			"address": "0x179b6b1cb6755e31",
+			"key": "2ecc06b8d08795e75ef3c04ddb85396eb3cd43bb987cf9711863321721af8a5e"
+		}
+	},
+	"contracts": {
+		"NonFungibleToken": {
+			"source": "./NonFungibleToken.cdc",
+			"aliases": {
+			  	"emulator": "0xf8d6e0586b0a20c7"
+			}
+		},
+		"FungibleToken": {
+			"source": "./FungibleToken.cdc",
+			"aliases": {
+				"emulator": "0xee82856bf20e2aa6"
+			}
+		},	
+		"MetadataViews": {
+			"source": "./MetadataViews.cdc",
+			"aliases": {
+			  	"emulator": "0xf8d6e0586b0a20c7"
+			}
+		},	
+		"EQCollectibles": {
+			"source": "./EQCollectibles.cdc",
+			"aliases": {
+				"emulator": "0xf8d6e0586b0a20c7"
+			}
+		}
+	},
+	"deployments": {
+		"emulator": {
+			"emulator-account": [
+				"EQCollectibles"
+			]
+		}
+	}
+}

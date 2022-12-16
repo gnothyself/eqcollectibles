@@ -1,0 +1,23 @@
+{
+    "scripts": {
+      "emulator": "flow emulator --contracts -v",
+      "build": "npm run deploy && npm run genAcct1 && npm run genAcct2 &&npm run createProfile1 && npm run createProfile2",
+      "profiles": "npm run createProfile1 && npm run createProfile2",
+      "deploy": "flow deploy",
+      "genAcct1": "flow accounts create --key d86346998d6874204e0b85d9cd2d17402fe8e51fd011c7e75d681d521df9be91e18cdcd90c83071f7eb57bae5a0ce1f9baaa595120d5975284d924522d22053b",
+      "genAcct2": "flow accounts create --key 4e61fbfa42c7c48b7070a5c44d7f39463bf2c01d17fc367cd1fd80531d1f9b7dc3698a92b6f7507a52c3a003fb542067118d3c940bf353878b1011056630c89b",
+      "seed": "flow transactions send ./txn.seedContract.cdc",
+      "mintAll": "flow transactions send ./txn.mintAll.cdc",
+      "meta": "flow scripts execute ./script.getMeta.cdc",
+      "add": "flow transactions send ./txn.addAccessory.cdc",
+      "remove": "flow transactions send ./txn.removeAccessory.cdc",
+      "update": "flow accounts update-contract ./EQCollectibles.cdc",
+      "addArtist": "flow transactions send ./txn.addApplicableArtist.cdc",
+      "mintIcon": "flow transactions send ./txn.mintIcon.cdc",
+      "createProfile1": "flow transactions send ./txn.createProfile1.cdc --signer emulator-account-2",
+      "createProfile2": "flow transactions send ./txn.createProfile2.cdc --signer emulator-account-3"
+    }
+  }
+
+
+
