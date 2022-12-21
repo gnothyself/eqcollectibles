@@ -4,18 +4,18 @@ transaction() {
   prepare(auth: AuthAccount){
     log("Seeding Contract")
 
-    //create profiles
-    EQCollectibles.createArtistProfile( //artistProfile 1
-      name: "rapta", 
-      description: "rapta makes music",
-      avatar: "https://eqmusic.io/media/raptaCollect.png"
-    )
+    // //create profiles
+    // EQCollectibles.createArtistProfile( //artistProfile 1
+    //   name: "rapta", 
+    //   description: "rapta makes music",
+    //   avatar: "https://eqmusic.io/media/raptaCollect.png"
+    // )
 
-    EQCollectibles.createArtistProfile( //artistProfile 2
-      name: "eq keys", 
-      description: "all things eq", 
-      avatar: "https://eqmusic.io/media/eq.png"
-    )
+    // EQCollectibles.createArtistProfile( //artistProfile 2
+    //   name: "eq keys", 
+    //   description: "all things eq", 
+    //   avatar: "https://eqmusic.io/media/eq.png"
+    // )
 
     //create collectibles
     EQCollectibles.createCollectibleTemplate( //templateId 1

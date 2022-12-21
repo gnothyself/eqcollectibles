@@ -27,6 +27,8 @@ transaction() {
             description: "rapta makes music",
             avatar: "https://eqmusic.io/media/raptaCollect.png"
         )
+        
+        
         log("Artist Profiles Created")
     }
 }

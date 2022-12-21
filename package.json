@@ -15,9 +15,9 @@
       "addArtist": "flow transactions send ./txn.addApplicableArtist.cdc",
       "mintIcon": "flow transactions send ./txn.mintIcon.cdc",
       "createProfile1": "flow transactions send ./txn.createProfile1.cdc --signer emulator-account-2",
-      "createProfile2": "flow transactions send ./txn.createProfile2.cdc --signer emulator-account-3"
+      "createProfile2": "flow transactions send ./txn.createProfile2.cdc --signer emulator-account-3",
+      "changeName": "flow transactions send ./txn.changeProfileName.cdc --signer emulator-account-3",
+      "getProfiles": "flow scripts execute ./script.getProfiles.cdc"
     }
-  }
-
-
-
+}
+ 
