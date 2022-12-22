@@ -172,12 +172,13 @@ pub contract EQCollectibles: NonFungibleToken {
         pub fun changeDescription(newDescription: String)
         pub fun changeAvatar(newAvatar: String)
         pub fun borrowTemplate(templateId: UInt64): &AnyResource
-        pub fun addAdmin(newAdmin: Address)
-        pub fun getAdmins(): [Address]
-
     }
     pub resource interface ArtistProfilePrivate {
         pub fun depositTemplate(template: @AnyResource)
+    }
+
+    pub resource interface LimitedProfileAdmin {
+        pub fun accessProfile(): &ArtistProfile{ArtistProfileAdmin}
     }
 
     pub resource interface TemplatePublic {
@@ -537,13 +538,11 @@ pub contract EQCollectibles: NonFungibleToken {
         pub var collectibleTemplates: @{UInt64: AnyResource}
         pub var totalCollectibles : UInt64
         pub var totalMintedByTemplate: {UInt64: UInt64}
-        access(contract) var adminAccounts: [Address]
 
         init(
           name: String,
           description: String,
           avatar: String,
-          admin: Address
         ) {
           EQCollectibles.totalProfiles = EQCollectibles.totalProfiles + 1
           self.id = EQCollectibles.totalProfiles
@@ -553,7 +552,6 @@ pub contract EQCollectibles: NonFungibleToken {
           self.collectibleTemplates <- {}
           self.totalCollectibles = 0
           self.totalMintedByTemplate = {}
-          self.adminAccounts = [admin]
         }
 
         destroy() {
@@ -743,16 +741,12 @@ pub contract EQCollectibles: NonFungibleToken {
         pub fun borrowTemplate(templateId: UInt64): auth &AnyResource {
             return &self.collectibleTemplates[templateId] as auth &AnyResource
         }
-        pub fun addAdmin(newAdmin: Address){}
-        pub fun getAdmins(): [Address]{
-            return self.adminAccounts
-        }
     }
 
-    pub resource ProfileAdmin {
+    pub resource ProfileAdmin: LimitedProfileAdmin {
         access(contract) let collection: Capability<&ProfileCollection{ProfileCollectionAdmin}>
         access(contract) let artistId: UInt64
-        // access(contract) let profile: Capability<&ArtistProfile{ArtistProfileAdmin}>
+        access(contract) var totalAdmins: UInt64
 
         init(
             collection: Capability<&ProfileCollection{ProfileCollectionAdmin}>,
@@ -760,6 +754,7 @@ pub contract EQCollectibles: NonFungibleToken {
         ) {
             self.collection = collection
             self.artistId = artistId
+            self.totalAdmins = 0
         }
 
         pub fun accessProfile(): &ArtistProfile{ArtistProfileAdmin} {
@@ -767,7 +762,57 @@ pub contract EQCollectibles: NonFungibleToken {
             let profile = collection.borrowAdminProfile(artistId: self.artistId)
             return profile!
         }
+
+        pub fun incrementTotalAdmins(): UInt64 {
+            self.totalAdmins = self.totalAdmins + 1
+            return self.totalAdmins
+        }
+
+        pub fun addAdmin(admin: AuthAccount, newAdmin: AuthAccount) {
+            let artistId = self.artistId.toString()
+            let storagePath: String = "EQProfile".concat(artistId).concat("Admin")
+            let privatePathString = "EQProfile".concat(artistId).concat("LimitedAdmin_").concat(self.incrementTotalAdmins().toString())
+            let privatePath = PrivatePath(identifier: privatePathString)!
+            let uniqueCapability = admin.link<&ProfileAdmin{LimitedProfileAdmin}>(privatePath, target: StoragePath(identifier: storagePath)!)!
+            newAdmin.save(<- create LimitedAdmin(capability: uniqueCapability), to: StoragePath(identifier: storagePath)!)
+        }
+
+        pub fun unlinkAdmin(admin: AuthAccount, unlinkId: UInt64) {
+            let privatePathString = "EQProfile".concat(self.artistId.toString()).concat("LimitedAdmin_").concat(unlinkId.toString())
+            let privatePath = PrivatePath(identifier: privatePathString)!
+
+            admin.unlink(privatePath)
+        }
+
+        pub fun relinkAdmin(admin: AuthAccount, relinkId: UInt64) {
+            pre {
+                relinkId <= self.totalAdmins : "this link id has not been used yet"
+            }
+            let artistId = self.artistId.toString()
+            let storagePath: String = "EQProfile".concat(artistId).concat("Admin")
+            let privatePathString = "EQProfile".concat(artistId).concat("LimitedAdmin_").concat(relinkId.toString())
+            let privatePath = PrivatePath(identifier: privatePathString)!
+            admin.link<&ProfileAdmin{LimitedProfileAdmin}>(privatePath, target: StoragePath(identifier: storagePath)!)!
+            
+        }
     }
+    pub resource LimitedAdmin {
+        access(contract) let capability: Capability<&ProfileAdmin{LimitedProfileAdmin}>
+
+         init(
+            capability: Capability<&ProfileAdmin{LimitedProfileAdmin}>
+         ) {
+            self.capability = capability
+         }
+
+         pub fun accessProfile() :&ArtistProfile{ArtistProfileAdmin} {
+            let capability = self.capability.borrow() ?? panic("This capability has been unlinked")
+            let profile = capability.accessProfile() 
+            
+            return profile
+         }
+    }
+
     pub resource CollectibleTemplate: TemplatePublic {
         pub let id: UInt64  //global id
         pub let artistId: UInt64
@@ -952,10 +997,6 @@ pub contract EQCollectibles: NonFungibleToken {
     pub fun createEmptyCollection(): @NonFungibleToken.Collection {
         return <- create Collection()
     }    
-    
-    pub fun createEmptyProfileCollection() : @EQCollectibles.ProfileCollection {
-        return <- create ProfileCollection()
-    }
 
     pub fun createArtistProfile( 
         account: AuthAccount,
@@ -968,16 +1009,13 @@ pub contract EQCollectibles: NonFungibleToken {
             name: name,
             description: description,
             avatar: avatar,
-            admin: account.address
         )
         let artistId = newProfile.id
+        let storagePath = "EQProfile".concat(artistId.toString()).concat("Admin")
         self.account.borrow<&EQCollectibles.ProfileCollection>(from: EQCollectibles.ProfileStoragePath)!.deposit(profile: <- newProfile)
-        // self.account.link<&{ArtistProfilePrivate}>(/private/ArtistProfilePrivate, target: /storage/ArtistProfile)
-        // self.account.link<&{ArtistProfileAdmin}>(/private/ArtistProfileAdmin, target: /storage/ArtistProfile)
 
         let collectionCapability = self.account.getCapability<&ProfileCollection{ProfileCollectionAdmin}>(/private/EQProfileAdmin)
-        // let profileCapability = self.account.getCapability 
-        account.save(<- EQCollectibles.createProfileAdmin(collection: collectionCapability, artistId: artistId), to: /storage/EQProfileAdmin)
+        account.save(<- EQCollectibles.createProfileAdmin(collection: collectionCapability, artistId: artistId), to: StoragePath(identifier: storagePath)!)
     }
 
     pub fun createProfileAdmin(collection: Capability<&ProfileCollection{ProfileCollectionAdmin}>, artistId: UInt64): @ProfileAdmin {
@@ -1058,7 +1096,7 @@ pub contract EQCollectibles: NonFungibleToken {
     }
 
     pub fun borrowProfile(artistId: UInt64): &ArtistProfile{ArtistProfilePublic}? {
-        var profileCollection = self.account.getCapability(self.ProfilePublicPath).borrow<&{ProfileCollectionPublic}>() 
+        var profileCollection = self.account.getCapability(self.ProfilePublicPath).borrow<&ProfileCollection{ProfileCollectionPublic}>() 
         let profile = profileCollection?.borrowProfile(artistId: artistId)!
         log(profile!.name)
         return profile!
@@ -1101,7 +1139,8 @@ pub contract EQCollectibles: NonFungibleToken {
     }
 
     pub fun mintIcon(artistId: UInt64, templateId: UInt64, user: Address): @NFT {
-            let template = EQCollectibles.borrowProfile(artistId: artistId)!.getTemplate(templateId: templateId)!
+            let profile = EQCollectibles.borrowProfile(artistId: artistId)!
+            let template  = profile.getTemplate(templateId: templateId)!
 
             return <- create NFT(template: template)    
     }
@@ -1161,10 +1200,9 @@ pub contract EQCollectibles: NonFungibleToken {
         self.account.save(<- create Admin(), to: EQCollectibles.AdminStoragePath)
         self.account.save(<- EQCollectibles.createEmptyCollection(), to: EQCollectibles.CollectionStoragePath)
         self.account.link<&EQCollectibles.Collection{EQCollectibles.CollectionPublic}>(EQCollectibles.CollectionPublicPath, target: EQCollectibles.CollectionStoragePath)
-        self.account.save<@EQCollectibles.ProfileCollection>(<-EQCollectibles.createEmptyProfileCollection(), to: EQCollectibles.ProfileStoragePath)
+        self.account.save<@EQCollectibles.ProfileCollection>(<- create ProfileCollection(), to: EQCollectibles.ProfileStoragePath)
         self.account.link<&EQCollectibles.ProfileCollection{EQCollectibles.ProfileCollectionPublic}>(EQCollectibles.ProfilePublicPath, target: EQCollectibles.ProfileStoragePath)
         self.account.link<&EQCollectibles.ProfileCollection{EQCollectibles.ProfileCollectionAdmin}>(/private/EQProfileAdmin, target: EQCollectibles.ProfileStoragePath)
-
 
         emit ContractInitialized()
     }

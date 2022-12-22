@@ -10,11 +10,15 @@
 			"address": "f8d6e0586b0a20c7",
 			"key": "6115cf42447cede77ae3aa0791940234d8ea448f4f975d0893db3dc76e3abc97"
 		},
-		"emulator-account-2": {
+		"eqmusic": {
+			"address": "f8d6e0586b0a20c7",
+			"key": "6115cf42447cede77ae3aa0791940234d8ea448f4f975d0893db3dc76e3abc97"
+		},
+		"rapta": {
 			"address": "0x01cf0e2f2f715450",
 			"key": "287f4368248a31db860868e702f4283c9404806ce85879b5896f58b5decbb7d3"
 		},
-		"emulator-account-3": {
+		"eqkeys": {
 			"address": "0x179b6b1cb6755e31",
 			"key": "2ecc06b8d08795e75ef3c04ddb85396eb3cd43bb987cf9711863321721af8a5e"
 		}
@@ -47,7 +51,7 @@
 	},
 	"deployments": {
 		"emulator": {
-			"emulator-account": [
+			"eqmusic": [
 				"EQCollectibles"
 			]
 		}

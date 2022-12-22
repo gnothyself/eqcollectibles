@@ -9,15 +9,15 @@ transaction() {
         log("Creating Artist Profiles")
         self.account = account
 
-        if account.borrow<&EQCollectibles.ProfileCollection>(from: EQCollectibles.ProfileStoragePath) == nil {
-            let collection <- EQCollectibles.createEmptyProfileCollection()
-            account.save(<-collection, to: EQCollectibles.ProfileStoragePath)
-            account.link<&EQCollectibles.ProfileCollection>(EQCollectibles.ProfilePublicPath, target: EQCollectibles.ProfileStoragePath)
-        }  
+        // if account.borrow<&EQCollectibles.ProfileCollection>(from: EQCollectibles.ProfileStoragePath) == nil {
+        //     let collection <- EQCollectibles.createEmptyProfileCollection()
+        //     account.save(<-collection, to: EQCollectibles.ProfileStoragePath)
+        //     account.link<&EQCollectibles.ProfileCollection>(EQCollectibles.ProfilePublicPath, target: EQCollectibles.ProfileStoragePath)
+        // }  
 
     }
     pre {
-        self.account.getLinkTarget(EQCollectibles.ProfilePublicPath) != nil : "This account does not have a profile collection."
+        // self.account.getLinkTarget(EQCollectibles.ProfilePublicPath) != nil : "This account does not have a profile collection."
     }
 
     execute {

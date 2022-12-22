@@ -11,9 +11,9 @@ pub fun main(): [&EQCollectibles.ArtistProfile{EQCollectibles.ArtistProfilePubli
 
     let profile1 = collection.borrowProfile(artistId: 1)
     profiles.append(profile1!)
-
+    log(profile1!.name)
     let profile2 = collection.borrowProfile(artistId: 2)
     profiles.append(profile2!)
-
+    log(profile2!.name)
     return profiles
 }
