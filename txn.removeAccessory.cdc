@@ -1,8 +1,8 @@
 import EQCollectibles from "./EQCollectibles.cdc"
-transaction(){
+transaction(category: String, iconId: UInt64){
 
     prepare(acct: AuthAccount) {
-        EQCollectibles.removeAccessory(account: acct, iconId: 2, category: "pants")
+        EQCollectibles.removeAccessory(account: acct, iconId: iconId, category: category)
     
     }
 

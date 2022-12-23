@@ -103,25 +103,19 @@ pub contract EQCollectibles: NonFungibleToken {
         pub fun deposit(token: @NonFungibleToken.NFT) 
 		pub fun getIDs(): [UInt64]
 		pub fun borrowNFT(id: UInt64): &NonFungibleToken.NFT
-        pub fun borrowCollectible(id: UInt64): &NFT
-		// pub fun borrowIcon(id: UInt64): &EQCollectibles.NFT{Icon}? {
-		// 	post {
-		// 		(result == nil) || (result?.id == id):
-		// 			"Cannot borrow Rapta reference: the ID of the returned reference is incorrect"
-		// 	}
-		// }
-        // pub fun borrowAccessory(id: UInt64): &EQCollectibles.NFT{Accessory}? {
-		// 	post {
-		// 		(result == nil) || (result?.id == id):
-		// 			"Cannot borrow Rapta reference: the ID of the returned reference is incorrect"
-		// 	}
-		// }
+        pub fun borrowCollectible(id: UInt64): &NFT{Public}
     }
 
     pub resource interface Public {
         pub let id: UInt64
         pub let name: String
         pub let description: String
+        pub let artistId: UInt64
+        pub let templateId: UInt64
+        pub var category: String?
+
+        pub fun borrowAccessories(): [&NFT{Accessory}]?         
+    
     }
 
     pub resource interface Icon {
@@ -134,7 +128,7 @@ pub contract EQCollectibles: NonFungibleToken {
 
         pub fun addAccessory(accessory: @NFT): @NFT?
         pub fun removeAccessory(category: String): @NFT?
-        pub fun borrowAccessories(): &AccessoryCollection? 
+        pub fun accessAccessories(): &AccessoryCollection? 
         pub fun getOwnedAccessoriesType(): Type
     }
 
@@ -177,7 +171,8 @@ pub contract EQCollectibles: NonFungibleToken {
         access(contract) fun incrementTemplateNumber(): UInt64
         pub fun getImageURL(templateId: UInt64, nftId: UInt64): String?
         pub fun getTemplate(templateId: UInt64): TemplateData?
-
+        pub fun getCollectibleIds(): [UInt64]
+        pub fun getCollectibleType(templateId: UInt64): Type?
     }
 
     pub resource interface ArtistProfileAdmin {
@@ -205,6 +200,11 @@ pub contract EQCollectibles: NonFungibleToken {
 
     pub resource interface TemplatePublic {
         pub fun updateName(newName: String)
+    }
+
+    pub resource interface PublicAccessoryCollection {
+        pub fun borrowNFT(category: String): &NFT{Accessory} 
+        pub fun getCollectionDetails(): [&NFT{Accessory}]
     }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////RESOURCES
@@ -296,7 +296,7 @@ pub contract EQCollectibles: NonFungibleToken {
             return EQCollectibles
         }
     }    
-    pub resource NFT: NonFungibleToken.INFT, Icon, Accessory, MetadataViews.Resolver {
+    pub resource NFT: NonFungibleToken.INFT, Public, Icon, Accessory, MetadataViews.Resolver {
         pub let id: UInt64
         pub let artistId: UInt64
         pub let templateId: UInt64
@@ -353,7 +353,17 @@ pub contract EQCollectibles: NonFungibleToken {
             return self.ownedAccessories.getType()
         }
 
-        pub fun borrowAccessories(): &AccessoryCollection? {
+        pub fun borrowAccessories():[&NFT{Accessory}]?  {
+
+            if self.ownedAccessories != nil {
+                let collection = &self.ownedAccessories as &AccessoryCollection?
+                let accessories = collection!.getCollectionDetails()
+                return accessories
+            }
+            return nil
+        }
+
+        pub fun accessAccessories(): &AccessoryCollection? {
             if self.ownedAccessories.isInstance(Type<@AccessoryCollection?>()) {
                 let ref = &self.ownedAccessories as &AccessoryCollection?
                 return ref
@@ -365,14 +375,14 @@ pub contract EQCollectibles: NonFungibleToken {
             let id: UInt64 = accessory.id
             let category = accessory.category!
 
-            let accessories = self.borrowAccessories()!
+            let accessories = self.accessAccessories()!
             
             let removedAccessory <- accessories.deposit(token: <- accessory)
             return <- removedAccessory
         }
 
         pub fun removeAccessory(category: String): @NFT? {
-            let accessories = self.borrowAccessories()!
+            let accessories = self.accessAccessories()!
             
             let removedAccessory <- accessories.withdraw(category: category)
             return <- removedAccessory
@@ -436,7 +446,9 @@ pub contract EQCollectibles: NonFungibleToken {
                     )
                 case Type<MetadataViews.Traits>() :
                     let traits: [MetadataViews.Trait] = []
-                    let accessories: [&NFT{Accessory}]? = self.borrowAccessories()?.getCollectionDetails()
+                    let accessories: [&NFT{Accessory}]? = self.borrowAccessories()
+                    // let accessories: [&NFT{Accessory}]? = self.accessAccessories()?.getCollectionDetails()
+
                     traits.append(MetadataViews.Trait(name: "artist collection", value: EQCollectibles.borrowProfile(artistId: self.artistId)!.name, displayType:"String", rarity: nil))
                     if accessories != nil {
                         for element in accessories! {
@@ -460,7 +472,7 @@ pub contract EQCollectibles: NonFungibleToken {
             return nil
         }
     }  
-    pub resource AccessoryCollection {
+    pub resource AccessoryCollection: PublicAccessoryCollection {
         pub var ownedNFTs: @{String: NFT}
 
         init () {
@@ -477,7 +489,6 @@ pub contract EQCollectibles: NonFungibleToken {
             let removedToken <- self.ownedNFTs[category] <- token
             emit Deposit(id: id, to: self.owner?.address)
             return <- removedToken
-            
         }
         
         pub fun withdraw(category: String): @NFT {
@@ -1153,7 +1164,7 @@ pub contract EQCollectibles: NonFungibleToken {
 
         let collection: &Collection = account.borrow<&Collection>(from: self.CollectionStoragePath)!
         let icon: &NFT{Icon} = collection.borrowIcon(id: iconId)!
-        let accessories: &AccessoryCollection = icon.borrowAccessories()! 
+        let accessories: &AccessoryCollection = icon.accessAccessories()! 
         let accessory: @NFT <- collection.withdrawAccessory(withdrawID: accessoryId)
 
         let accessorize <- icon.addAccessory(accessory: <- accessory)
@@ -1167,7 +1178,7 @@ pub contract EQCollectibles: NonFungibleToken {
     pub fun removeAccessory(account: AuthAccount, iconId: UInt64, category: String) {
         let collection: &Collection = account.borrow<&Collection>(from: self.CollectionStoragePath)!
         let icon: &NFT{Icon} = collection.borrowIcon(id: iconId)!
-        let accessories: &AccessoryCollection = icon.borrowAccessories()! 
+        let accessories: &AccessoryCollection = icon.accessAccessories()! 
 
         let removed <- icon.removeAccessory(category: category)
         if (removed != nil) {

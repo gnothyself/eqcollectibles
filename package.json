@@ -9,8 +9,8 @@
       "seed": "flow transactions send ./txn.seedContract.cdc",
       "mintAll": "flow transactions send ./txn.mintAll.cdc --signer",
       "meta": "flow scripts execute ./script.getMeta.cdc",
-      "add": "flow transactions send ./txn.addAccessory.cdc",
-      "remove": "flow transactions send ./txn.removeAccessory.cdc",
+      "add": "flow transactions send ./txn.addAccessory.cdc --signer",
+      "remove": "flow transactions send ./txn.removeAccessory.cdc --signer",
       "update": "flow accounts update-contract ./EQCollectibles.cdc",
       "addArtist": "flow transactions send ./txn.addApplicableArtist.cdc",
       "mintIcon": "flow transactions send ./txn.mintIcon.cdc",
@@ -21,7 +21,8 @@
       "getProfiles": "flow scripts execute ./script.getProfiles.cdc",
       "addAdmin": "flow transactions build ./txn.addAdmin.cdc --proposer eqkeys --payer eqkeys --authorizer rapta --authorizer eqkeys --filter payload --save tx1 && flow transactions sign tx1 --signer rapta --filter payload --save tx2 && flow transactions sign tx2 --signer eqkeys --filter payload --save tx3 && flow transactions send-signed tx3",
       "unlinkAdmin": "flow transactions send ./txn.unlinkAdmin.cdc --signer",
-      "relinkAdmin": "flow transactions send ./txn.relinkAdmin.cdc --signer"
+      "relinkAdmin": "flow transactions send ./txn.relinkAdmin.cdc --signer",
+      "templates": "flow scripts execute ./script.viewTemplateDetails.cdc"
     }
 }
  

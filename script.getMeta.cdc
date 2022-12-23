@@ -1,6 +1,6 @@
 import EQCollectibles from "./EQCollectibles.cdc"
 
-pub fun main(address: Address, id: UInt64): &EQCollectibles.NFT {
+pub fun main(address: Address, id: UInt64): &EQCollectibles.NFT{EQCollectibles.Public} {
     let account = getAccount(address)
     let collection = account
         .getCapability(EQCollectibles.CollectionPublicPath)
