@@ -9,13 +9,13 @@ transaction(artistId: UInt64, newName: String) {
         log(type)
         switch type {
             case Type<@EQCollectibles.ProfileAdmin>():
-                log("case is profile admin")
                 let admin = account.borrow<&EQCollectibles.ProfileAdmin>(from: storagePath!) ?? panic("could not borrow reference")
                 admin.accessProfile().changeName(newName: newName)
+                
             case Type<@EQCollectibles.LimitedAdmin>():
-                log("case is limited admin")
                 let admin = account.borrow<&EQCollectibles.LimitedAdmin>(from: storagePath!)!
                 admin.accessProfile().changeName(newName: newName)
+
             default: 
                 log("no matching case")
         }

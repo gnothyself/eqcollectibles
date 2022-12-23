@@ -2,7 +2,6 @@ import NonFungibleToken from "./NonFungibleToken.cdc"
 import MetadataViews from "./MetadataViews.cdc"
 import FungibleToken from "./FungibleToken.cdc"
 pub contract EQCollectibles: NonFungibleToken {
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////STORAGE PATHS
     pub let CollectionStoragePath: StoragePath
     pub let CollectionPublicPath: PublicPath
@@ -14,19 +13,20 @@ pub contract EQCollectibles: NonFungibleToken {
     pub event ContractInitialized()
     pub event Withdraw(id: UInt64, from: Address?)
     pub event Deposit(id: UInt64, to: Address?)
-    pub event Mint(id: UInt64)
-	pub event AccessoryAdded(EQCollectiblesId: UInt64, accessory: String)
-	pub event AccessoryRemoved(EQCollectiblesId: UInt64, accessory: String)
-    pub event Updated(iconId: UInt64)
+    pub event ProfileCreated(artistId: UInt64)
+    pub event TemplateCreated(artistId: UInt64, templateId: UInt64)
+    pub event Mint(id: UInt64, artistId: UInt64, templateId: UInt64)
+	pub event AccessoryAdded(iconId: UInt64, accessoryId: UInt64)
+	pub event AccessoryRemoved(iconId: UInt64, accessoryId: UInt64)
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////VARIABLES
     pub var totalSupply: UInt64
     pub var totalProfiles: UInt64
     pub var totalTemplates: UInt64
-    access(self) let totalMintedByTemplate: {UInt64: UInt64}
     pub var royalties: [Royalty]
     access(account) var royaltyCut: UFix64
     access(account) var marketplaceCut: UFix64
     access(contract) var artistAddresses: {UInt64: Address}
+    access(contract) let totalMintedByTemplate: {UInt64: UInt64}
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////ROYALTIES
     pub enum RoyaltyType: UInt8{
         pub case fixed
@@ -98,91 +98,30 @@ pub contract EQCollectibles: NonFungibleToken {
         }
     }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////INTERFACES
-    pub resource interface Public {
-        pub let id: UInt64
-        pub let name: String
-        pub let description: String
-
-    }
-
-    pub resource interface Private {
-
-    }
 
     pub resource interface CollectionPublic {    
         pub fun deposit(token: @NonFungibleToken.NFT) 
 		pub fun getIDs(): [UInt64]
 		pub fun borrowNFT(id: UInt64): &NonFungibleToken.NFT
-		pub fun borrowIcon(id: UInt64): &EQCollectibles.NFT{Icon}? {
-			post {
-				(result == nil) || (result?.id == id):
-					"Cannot borrow Rapta reference: the ID of the returned reference is incorrect"
-			}
-		}
-        pub fun borrowAccessory(id: UInt64): &EQCollectibles.NFT{Accessory}? {
-			post {
-				(result == nil) || (result?.id == id):
-					"Cannot borrow Rapta reference: the ID of the returned reference is incorrect"
-			}
-		}
+        pub fun borrowCollectible(id: UInt64): &NFT
+		// pub fun borrowIcon(id: UInt64): &EQCollectibles.NFT{Icon}? {
+		// 	post {
+		// 		(result == nil) || (result?.id == id):
+		// 			"Cannot borrow Rapta reference: the ID of the returned reference is incorrect"
+		// 	}
+		// }
+        // pub fun borrowAccessory(id: UInt64): &EQCollectibles.NFT{Accessory}? {
+		// 	post {
+		// 		(result == nil) || (result?.id == id):
+		// 			"Cannot borrow Rapta reference: the ID of the returned reference is incorrect"
+		// 	}
+		// }
     }
 
-    pub resource interface ProfileCollectionPublic {
-        pub fun borrowProfile(artistId: UInt64): &EQCollectibles.ArtistProfile{ArtistProfilePublic}? {
-            post {
-                (result == nil) || (result?.id == artistId):
-                "Cannot borrow profile reference: The ID of the returned reference is incorrect"
-            }
-        }
-    }
-
-    pub resource interface ProfileCollectionAdmin {
-        pub fun borrowAdminProfile(artistId: UInt64): &EQCollectibles.ArtistProfile{ArtistProfileAdmin}? {
-            post {
-                (result == nil) || (result?.id == artistId):
-                "Cannot borrow profile reference: The ID of the returned reference is incorrect"
-            }
-        }
-    }
-
-    pub resource interface ArtistProfilePublic {
+    pub resource interface Public {
         pub let id: UInt64
-        pub var name: String
-        pub var description: String
-        pub var avatar: String
-        pub var totalCollectibles: UInt64
-        pub var totalMintedByTemplate: {UInt64: UInt64}
-        pub fun borrowCollection(): {UInt64: AnyStruct}?
-        access(contract) fun incrementTemplateNumber(): UInt64
-        pub fun getImageURL(templateId: UInt64, nftId: UInt64): String?
-        pub fun getTemplate(templateId: UInt64): TemplateData?
-
-    }
-
-    pub resource interface ArtistProfileAdmin {
-        pub let id: UInt64
-        pub var name: String
-        pub var description: String
-        pub var avatar: String
-        pub var collectibleTemplates: @{UInt64: AnyResource}
-        pub var totalCollectibles : UInt64
-        pub var totalMintedByTemplate: {UInt64: UInt64} 
-
-        pub fun changeName(newName: String)
-        pub fun changeDescription(newDescription: String)
-        pub fun changeAvatar(newAvatar: String)
-        pub fun borrowTemplate(templateId: UInt64): &AnyResource
-    }
-    pub resource interface ArtistProfilePrivate {
-        pub fun depositTemplate(template: @AnyResource)
-    }
-
-    pub resource interface LimitedProfileAdmin {
-        pub fun accessProfile(): &ArtistProfile{ArtistProfileAdmin}
-    }
-
-    pub resource interface TemplatePublic {
-        pub fun updateName(newName: String)
+        pub let name: String
+        pub let description: String
     }
 
     pub resource interface Icon {
@@ -208,6 +147,66 @@ pub contract EQCollectibles: NonFungibleToken {
         pub var category: String?
         pub var layer: String?
     }
+
+    pub resource interface ProfileCollectionPublic {
+        pub fun borrowProfile(artistId: UInt64): &EQCollectibles.ArtistProfile{PublicProfile}? {
+            post {
+                (result == nil) || (result?.id == artistId):
+                "Cannot borrow profile reference: The ID of the returned reference is incorrect"
+            }
+        }
+    }
+
+    pub resource interface ProfileCollectionAdmin {
+        pub fun borrowAdminProfile(artistId: UInt64): &EQCollectibles.ArtistProfile{ArtistProfileAdmin}? {
+            post {
+                (result == nil) || (result?.id == artistId):
+                "Cannot borrow profile reference: The ID of the returned reference is incorrect"
+            }
+        }
+    }
+
+    pub resource interface PublicProfile {
+        pub let id: UInt64
+        pub var name: String
+        pub var description: String
+        pub var avatar: String
+        pub var totalCollectibles: UInt64
+        pub var totalMintedByTemplate: {UInt64: UInt64}
+        pub fun borrowCollection(): {UInt64: AnyStruct}?
+        access(contract) fun incrementTemplateNumber(): UInt64
+        pub fun getImageURL(templateId: UInt64, nftId: UInt64): String?
+        pub fun getTemplate(templateId: UInt64): TemplateData?
+
+    }
+
+    pub resource interface ArtistProfileAdmin {
+        pub let id: UInt64
+        pub var name: String
+        pub var description: String
+        pub var avatar: String
+        pub var collectibleTemplates: @{UInt64: AnyResource}
+        pub var totalCollectibles : UInt64
+        pub var totalMintedByTemplate: {UInt64: UInt64} 
+
+        pub fun changeName(newName: String)
+        pub fun changeDescription(newDescription: String)
+        pub fun changeAvatar(newAvatar: String)
+        pub fun addApplicableArtistToTemplate(templateId: UInt64, artistId: UInt64)
+        pub fun borrowTemplate(templateId: UInt64): &AnyResource
+    }
+    pub resource interface ArtistProfilePrivate {
+        pub fun depositTemplate(template: @AnyResource)
+    }
+
+    pub resource interface LimitedProfileAdmin {
+        pub fun accessProfile(): &ArtistProfile{ArtistProfileAdmin}
+    }
+
+    pub resource interface TemplatePublic {
+        pub fun updateName(newName: String)
+    }
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////RESOURCES
     pub resource Collection: CollectionPublic, NonFungibleToken.Provider, NonFungibleToken.Receiver, NonFungibleToken.CollectionPublic, MetadataViews.ResolverCollection {
         pub var ownedNFTs: @{UInt64: NonFungibleToken.NFT}
@@ -254,6 +253,15 @@ pub contract EQCollectibles: NonFungibleToken {
             return (&self.ownedNFTs[id] as &NonFungibleToken.NFT?)!
         }
 
+        pub fun borrowCollectible(id: UInt64): &NFT {
+            pre {
+                self.ownedNFTs[id] != nil : "NFT does not exist"
+            }
+            let ref = (&self.ownedNFTs[id] as auth &NonFungibleToken.NFT?)!
+            let EQCollectible = ref as! &NFT
+            return EQCollectible
+        }
+
         pub fun borrowIcon(id: UInt64): &EQCollectibles.NFT{Icon}? {
             pre {
                 self.ownedNFTs[id] != nil : "NFT does not exist"
@@ -288,7 +296,7 @@ pub contract EQCollectibles: NonFungibleToken {
             return EQCollectibles
         }
     }    
-    pub resource NFT: NonFungibleToken.INFT, Icon, Accessory, Private, MetadataViews.Resolver {
+    pub resource NFT: NonFungibleToken.INFT, Icon, Accessory, MetadataViews.Resolver {
         pub let id: UInt64
         pub let artistId: UInt64
         pub let templateId: UInt64
@@ -324,7 +332,7 @@ pub contract EQCollectibles: NonFungibleToken {
             self.layer = template.layer
             self.category = template.category
             EQCollectibles.setTotalMintedByTemplate(templateId: template.id, value: self.collectionId)
-            emit Mint(id: self.id)
+            emit Mint(id: self.id, artistId: template.artistId, templateId: template.id)
         }
 
         destroy() {
@@ -530,7 +538,7 @@ pub contract EQCollectibles: NonFungibleToken {
             }
         }
     }
-    pub resource ArtistProfile: ArtistProfilePublic, ArtistProfileAdmin, ArtistProfilePrivate {
+    pub resource ArtistProfile: PublicProfile, ArtistProfileAdmin, ArtistProfilePrivate {
         pub let id: UInt64
         pub var name: String
         pub var description: String
@@ -576,23 +584,20 @@ pub contract EQCollectibles: NonFungibleToken {
             switch type {
                 case Type<@EQCollectibles.CollectibleTemplate>():
                     let template <- template as! @CollectibleTemplate
-                    let id: UInt64 = template.id
-                    log("depositing template: ".concat(template.name).concat(", templateId: ").concat(id.toString()))
-                    let oldTemplate <- self.collectibleTemplates[id] <- template
+                    // let id: UInt64 = template.id
+                    let oldTemplate <- self.collectibleTemplates[template.id] <- template
                     destroy oldTemplate
 
                 case Type<@EQCollectibles.IconTemplate>():
                     let template <- template as! @IconTemplate
-                    let id: UInt64 = template.id
-                    log("depositing template: ".concat(template.name).concat(", templateId: ").concat(id.toString()))
-                    let oldTemplate <- self.collectibleTemplates[id] <- template
+                    // let id: UInt64 = template.id
+                    let oldTemplate <- self.collectibleTemplates[template.id] <- template
                     destroy oldTemplate
 
                 case Type<@EQCollectibles.AccessoryTemplate>():
                     let template <- template as! @AccessoryTemplate
-                    let id: UInt64 = template.id
-                    log("depositing template: ".concat(template.name).concat(", templateId: ").concat(id.toString()))
-                    let oldTemplate <- self.collectibleTemplates[id] <- template
+                    // let id: UInt64 = template.id
+                    let oldTemplate <- self.collectibleTemplates[template.id] <- template
                     destroy oldTemplate
                 
                 default:
@@ -1095,10 +1100,9 @@ pub contract EQCollectibles: NonFungibleToken {
         
     }
 
-    pub fun borrowProfile(artistId: UInt64): &ArtistProfile{ArtistProfilePublic}? {
+    pub fun borrowProfile(artistId: UInt64): &ArtistProfile{PublicProfile}? {
         var profileCollection = self.account.getCapability(self.ProfilePublicPath).borrow<&ProfileCollection{ProfileCollectionPublic}>() 
         let profile = profileCollection?.borrowProfile(artistId: artistId)!
-        log(profile!.name)
         return profile!
     }
 

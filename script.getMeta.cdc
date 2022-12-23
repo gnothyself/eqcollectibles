@@ -1,14 +1,14 @@
 import EQCollectibles from "./EQCollectibles.cdc"
 
-pub fun main(): &EQCollectibles.NFT{EQCollectibles.Accessory} {
-    let account = getAccount(0xf8d6e0586b0a20c7)
+pub fun main(address: Address, id: UInt64): &EQCollectibles.NFT {
+    let account = getAccount(address)
     let collection = account
         .getCapability(EQCollectibles.CollectionPublicPath)
         .borrow<&EQCollectibles.Collection{EQCollectibles.CollectionPublic}>()
         ?? panic("Could not borrow a reference to the collection")
 
-    // let nft = collection.borrowIcon(id: 3)!
-    let nft = collection.borrowAccessory(id: 2)!
+    let nft = collection.borrowCollectible(id: id)
+    // let nft = collection.borrowAccessory(id: 2)!
 
         log(nft)
 
