@@ -1,21 +1,10 @@
 import EQCollectibles from "./EQCollectibles.cdc"
+import FungibleToken from "./FungibleToken.cdc"
+import MetadataViews from "./MetadataViews.cdc"
 
 transaction() {
   prepare(auth: AuthAccount){
     log("Seeding Contract")
-
-    // //create profiles
-    // EQCollectibles.createArtistProfile( //artistProfile 1
-    //   name: "rapta", 
-    //   description: "rapta makes music",
-    //   avatar: "https://eqmusic.io/media/raptaCollect.png"
-    // )
-
-    // EQCollectibles.createArtistProfile( //artistProfile 2
-    //   name: "eq keys", 
-    //   description: "all things eq", 
-    //   avatar: "https://eqmusic.io/media/eq.png"
-    // )
 
     //create collectibles
     EQCollectibles.createCollectibleTemplate( //templateId 1
@@ -24,7 +13,11 @@ transaction() {
       description: "a digital assistant for the metaverse", 
       image: "https://images.eqmusic.io/temp/plugin.png", 
       imageModifier: nil,
-      mintLimit: 108)
+      mintLimit: 108,
+      royalties: [EQCollectibles.Royalty(wallet: getAccount(0xf3fcd2c1a78f5eee).getCapability<&{FungibleToken.Receiver}>(MetadataViews.getRoyaltyReceiverPublicPath()), 
+            cut: 0.005,
+            type: EQCollectibles.RoyaltyType.percentage)]
+      )
 
     EQCollectibles.createCollectibleTemplate( //templateId 2
       artistId: 2, 
@@ -32,7 +25,11 @@ transaction() {
       description: "a collection of plugins that serve as keys to the whole eq music ecosystem", 
       image: "https://ipfs.io/ipfs/QmcvBqdNSXnSzbPDRsbnarnk1LnWR3rxp1SHuXDCQXTPLK/", 
       imageModifier: ".webp",
-      mintLimit: 108)
+      mintLimit: 108,
+      royalties: [EQCollectibles.Royalty(wallet: getAccount(0xf3fcd2c1a78f5eee).getCapability<&{FungibleToken.Receiver}>(MetadataViews.getRoyaltyReceiverPublicPath()), 
+            cut: 0.005,
+            type: EQCollectibles.RoyaltyType.percentage)]
+    )
 
     //create icons
     EQCollectibles.createIconTemplate( //templateId 3
@@ -43,7 +40,10 @@ transaction() {
       image: "https://images.eqmusic.io/icons/rapta/", 
       imageModifier: ".png",
       layer: "layer", 
-      artistId: 1
+      artistId: 1,
+      royalties: [EQCollectibles.Royalty(wallet: getAccount(0xf3fcd2c1a78f5eee).getCapability<&{FungibleToken.Receiver}>(MetadataViews.getRoyaltyReceiverPublicPath()), 
+            cut: 0.005,
+            type: EQCollectibles.RoyaltyType.percentage)]
     )
 
     EQCollectibles.createIconTemplate( //templateId 4
@@ -54,7 +54,10 @@ transaction() {
       image: "image", 
       imageModifier: nil,
       layer: "layer", 
-      artistId: 2
+      artistId: 2,
+      royalties: [EQCollectibles.Royalty(wallet: getAccount(0xf3fcd2c1a78f5eee).getCapability<&{FungibleToken.Receiver}>(MetadataViews.getRoyaltyReceiverPublicPath()), 
+            cut: 0.005,
+            type: EQCollectibles.RoyaltyType.percentage)]
     )
 
     //create accessories
@@ -66,7 +69,10 @@ transaction() {
       image: "https://ipfs.io/ipfs/QmNqMwhePsWvzqWeGawC6SgjK1x8QbTKxE8nZbASymWywH", 
       imageModifier: nil,
       layer: "layer", 
-      mintLimit: 108
+      mintLimit: 108,
+      royalties: [EQCollectibles.Royalty(wallet: getAccount(0xf3fcd2c1a78f5eee).getCapability<&{FungibleToken.Receiver}>(MetadataViews.getRoyaltyReceiverPublicPath()), 
+            cut: 0.005,
+            type: EQCollectibles.RoyaltyType.percentage)]
     )
 
     EQCollectibles.createAccessoryTemplate( //templateId 6
@@ -77,7 +83,10 @@ transaction() {
       image: "https://ipfs.io/ipfs/QmR1DLaZT7dBgQ7cimzLt33mapABzfrNfmMJbfpvUFCY1z", 
       imageModifier: nil,
       layer: "layer", 
-      mintLimit: 108
+      mintLimit: 108,
+      royalties: [EQCollectibles.Royalty(wallet: getAccount(0xf3fcd2c1a78f5eee).getCapability<&{FungibleToken.Receiver}>(MetadataViews.getRoyaltyReceiverPublicPath()), 
+            cut: 0.005,
+            type: EQCollectibles.RoyaltyType.percentage)]
     )
 
     EQCollectibles.createAccessoryTemplate( //templateId 7
@@ -88,7 +97,10 @@ transaction() {
       image: "https://ipfs.io/ipfs/QmQDXa3tJQctu68X1UfXq4qQwrRNpjaLwKWBuwSCXuKoBq", 
       imageModifier: nil,
       layer: "layer", 
-      mintLimit: 108
+      mintLimit: 108,
+      royalties: [EQCollectibles.Royalty(wallet: getAccount(0xf3fcd2c1a78f5eee).getCapability<&{FungibleToken.Receiver}>(MetadataViews.getRoyaltyReceiverPublicPath()), 
+            cut: 0.005,
+            type: EQCollectibles.RoyaltyType.percentage)]
     )
 
 

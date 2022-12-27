@@ -68,6 +68,7 @@ pub contract EQCollectibles: NonFungibleToken {
         pub var ownsAccessories: Bool
         pub var layer: String?
         pub var category: String?
+        pub var royalties: [Royalty]
 
         init(
             id: UInt64,
@@ -81,7 +82,8 @@ pub contract EQCollectibles: NonFungibleToken {
             mintLimit: UInt64,
             ownsAccessories: Bool,
             layer: String?,
-            category: String?
+            category: String?,
+            royalties: [Royalty]
         ) {
             self.id = id
             self.artistId = artistId
@@ -95,6 +97,7 @@ pub contract EQCollectibles: NonFungibleToken {
             self.ownsAccessories = ownsAccessories
             self.layer = layer
             self.category = category
+            self.royalties = royalties
         }
     }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////INTERFACES
@@ -167,6 +170,7 @@ pub contract EQCollectibles: NonFungibleToken {
         pub var avatar: String
         pub var totalCollectibles: UInt64
         pub var totalMintedByTemplate: {UInt64: UInt64}
+        pub var royalties: [Royalty]
         pub fun borrowCollection(): {UInt64: AnyStruct}?
         access(contract) fun incrementTemplateNumber(): UInt64
         pub fun getImageURL(templateId: UInt64, nftId: UInt64): String?
@@ -189,6 +193,7 @@ pub contract EQCollectibles: NonFungibleToken {
         pub fun changeAvatar(newAvatar: String)
         pub fun addApplicableArtistToTemplate(templateId: UInt64, artistId: UInt64)
         pub fun borrowTemplate(templateId: UInt64): &AnyResource
+        access(contract) fun setRoyalties(newRoyalties: [Royalty])
     }
     pub resource interface ArtistProfilePrivate {
         pub fun depositTemplate(template: @AnyResource)
@@ -447,8 +452,6 @@ pub contract EQCollectibles: NonFungibleToken {
                 case Type<MetadataViews.Traits>() :
                     let traits: [MetadataViews.Trait] = []
                     let accessories: [&NFT{Accessory}]? = self.borrowAccessories()
-                    // let accessories: [&NFT{Accessory}]? = self.accessAccessories()?.getCollectionDetails()
-
                     traits.append(MetadataViews.Trait(name: "artist collection", value: EQCollectibles.borrowProfile(artistId: self.artistId)!.name, displayType:"String", rarity: nil))
                     if accessories != nil {
                         for element in accessories! {
@@ -456,18 +459,28 @@ pub contract EQCollectibles: NonFungibleToken {
                             traits.append(trait)
                         }
                     }
-  
                     return MetadataViews.Traits(traits)
                  
 
-                // case Type<MetadataViews.Royalties>():
-                //     let royalties : [MetadataViews.Royalty] = []
-                //     var count: Int = 0
-                //     for royalty in self.royalties.royalty {
-                //         royalties.append(MetadataViews.Royalty(receiver: royalty.wallet, cut: royalty.cut, description: "Flovatar Royalty ".concat(count.toString())))
-                //         count = count + 1
-                //     }
-                //     return MetadataViews.Royalties(royalties)
+                case Type<MetadataViews.Royalties>():
+                    let royalties : [MetadataViews.Royalty] = []
+                    let artist = EQCollectibles.borrowProfile(artistId: self.artistId)!
+                    let artistRoyalties = artist.royalties
+                    var artistCount = 1
+                    let templateRoyalties = artist.getTemplate(templateId: self.templateId)!.royalties
+                    let templateCount = 1
+                    for royalty in EQCollectibles.royalties {
+                        royalties.append(MetadataViews.Royalty(receiver: royalty.wallet, cut: royalty.cut, description: "EQ Collectibles Royalty "))
+                    }
+                    for royalty in artistRoyalties {
+                        royalties.append(MetadataViews.Royalty(receiver: royalty.wallet, cut: royalty.cut, description: "EQ Artist Royalty ".concat(artistCount.toString())))
+                        artistCount = artistCount + 1
+                    }
+                    for royalty in templateRoyalties {
+                        royalties.append(MetadataViews.Royalty(receiver: royalty.wallet, cut: royalty.cut, description: "NFT Artist Royalty ".concat(templateCount.toString())))
+                        artistCount = templateCount + 1
+                    }
+                    return MetadataViews.Royalties(royalties)
             }
             return nil
         }
@@ -557,11 +570,13 @@ pub contract EQCollectibles: NonFungibleToken {
         pub var collectibleTemplates: @{UInt64: AnyResource}
         pub var totalCollectibles : UInt64
         pub var totalMintedByTemplate: {UInt64: UInt64}
+        pub var royalties:[Royalty]
 
         init(
           name: String,
           description: String,
           avatar: String,
+          royalties: [Royalty]
         ) {
           EQCollectibles.totalProfiles = EQCollectibles.totalProfiles + 1
           self.id = EQCollectibles.totalProfiles
@@ -571,6 +586,7 @@ pub contract EQCollectibles: NonFungibleToken {
           self.collectibleTemplates <- {}
           self.totalCollectibles = 0
           self.totalMintedByTemplate = {}
+          self.royalties = royalties
         }
 
         destroy() {
@@ -635,7 +651,8 @@ pub contract EQCollectibles: NonFungibleToken {
                             mintLimit: template.mintLimit, 
                             ownsAccessories: false, 
                             layer: nil, 
-                            category: nil 
+                            category: nil,
+                            royalties: template.royalties 
                         )
                     
                     case Type<@EQCollectibles.IconTemplate?>():
@@ -652,7 +669,8 @@ pub contract EQCollectibles: NonFungibleToken {
                             mintLimit: template.mintLimit, 
                             ownsAccessories: true, 
                             layer: template.layer, 
-                            category: nil 
+                            category: nil,
+                            royalties: template.royalties  
                         )
                     case Type<@EQCollectibles.AccessoryTemplate?>():
                         let template = self.borrowAccessoryTemplate(templateId: templateId)
@@ -668,7 +686,8 @@ pub contract EQCollectibles: NonFungibleToken {
                             mintLimit: template.mintLimit, 
                             ownsAccessories: false,
                             layer: template.layer, 
-                            category: template.category 
+                            category: template.category ,
+                            royalties: template.royalties 
                         )  
 
                     default:
@@ -683,6 +702,7 @@ pub contract EQCollectibles: NonFungibleToken {
         pub fun getTotalTemplates(): Int {
             return self.collectibleTemplates.length
         }
+
         access(contract) fun borrowCollectibleTemplate(templateId: UInt64): &CollectibleTemplate {            
             log("borrowing collectible")
             let ref = &self.collectibleTemplates[templateId] as auth &AnyResource
@@ -757,6 +777,10 @@ pub contract EQCollectibles: NonFungibleToken {
         pub fun borrowTemplate(templateId: UInt64): auth &AnyResource {
             return &self.collectibleTemplates[templateId] as auth &AnyResource
         }
+
+        access(contract) fun setRoyalties(newRoyalties: [Royalty]){
+            self.royalties = newRoyalties
+        }
     }
 
     pub resource ProfileAdmin: LimitedProfileAdmin {
@@ -811,6 +835,11 @@ pub contract EQCollectibles: NonFungibleToken {
             admin.link<&ProfileAdmin{LimitedProfileAdmin}>(privatePath, target: StoragePath(identifier: storagePath)!)!
             
         }
+
+        pub fun setRoyalties(newRoyalties: [Royalty]) {
+            let profile = self.accessProfile()
+            profile.setRoyalties(newRoyalties: newRoyalties)
+        }
     }
     pub resource LimitedAdmin {
         access(contract) let capability: Capability<&ProfileAdmin{LimitedProfileAdmin}>
@@ -821,12 +850,12 @@ pub contract EQCollectibles: NonFungibleToken {
             self.capability = capability
          }
 
-         pub fun accessProfile() :&ArtistProfile{ArtistProfileAdmin} {
+        pub fun accessProfile() :&ArtistProfile{ArtistProfileAdmin} {
             let capability = self.capability.borrow() ?? panic("This capability has been unlinked")
             let profile = capability.accessProfile() 
             
             return profile
-         }
+        }
     }
 
     pub resource CollectibleTemplate: TemplatePublic {
@@ -839,6 +868,7 @@ pub contract EQCollectibles: NonFungibleToken {
         pub var imageModifier: String?
         pub var mintLimit: UInt64
         pub var layer: String?
+        pub var royalties: [Royalty]
 
         init(
             artistId: UInt64,
@@ -846,7 +876,8 @@ pub contract EQCollectibles: NonFungibleToken {
             description: String,
             image: String,
             imageModifier: String?,
-            mintLimit: UInt64
+            mintLimit: UInt64,
+            royalties: [Royalty]
         ) {
             EQCollectibles.totalTemplates = EQCollectibles.totalTemplates + 1
             self.id = EQCollectibles.totalTemplates
@@ -858,6 +889,7 @@ pub contract EQCollectibles: NonFungibleToken {
             self.image = image
             self.imageModifier = imageModifier
             self.layer = nil
+            self.royalties = royalties
         }
 
         pub fun updateImage(newImage: String) {
@@ -884,6 +916,7 @@ pub contract EQCollectibles: NonFungibleToken {
         pub var image: String
         pub var imageModifier: String?
         pub var layer: String
+        pub var royalties: [Royalty]
 
         init(
             name: String,
@@ -892,7 +925,8 @@ pub contract EQCollectibles: NonFungibleToken {
             image: String,
             imageModifier: String?,
             layer: String,
-            artistId: UInt64
+            artistId: UInt64,
+            royalties: [Royalty]
         ) {
             EQCollectibles.totalTemplates = EQCollectibles.totalTemplates + 1
             self.id = EQCollectibles.totalTemplates
@@ -905,6 +939,7 @@ pub contract EQCollectibles: NonFungibleToken {
             self.image = image
             self.imageModifier = imageModifier
             self.layer = layer
+            self.royalties = royalties
         }
 
         pub fun updateImage(newImage: String) {
@@ -935,6 +970,7 @@ pub contract EQCollectibles: NonFungibleToken {
         pub var image: String
         pub var imageModifier: String?
         pub var layer: String?
+        pub var royalties: [Royalty]
 
         init(
             artistId: UInt64,
@@ -944,7 +980,8 @@ pub contract EQCollectibles: NonFungibleToken {
             image: String,
             imageModifier: String?,
             layer: String,
-            mintLimit: UInt64
+            mintLimit: UInt64,
+            royalties: [Royalty]
         ) {
             EQCollectibles.totalTemplates = EQCollectibles.totalTemplates + 1
             self.id = EQCollectibles.totalTemplates
@@ -958,6 +995,7 @@ pub contract EQCollectibles: NonFungibleToken {
             self.image = image
             self.imageModifier = imageModifier
             self.layer = layer
+            self.royalties = royalties
         }
 
         pub fun updateImage(newImage: String) {
@@ -989,12 +1027,6 @@ pub contract EQCollectibles: NonFungibleToken {
         pub fun createNewAdmin(): @Admin {
             return <-create Admin()
         }
-        
-        // pub fun updateIconLayer(user: AuthAccount, id: UInt64, newLayer: String) {
-        //     let icon = user.borrow<&EQCollectibles.Collection>(from: EQCollectibles.CollectionStoragePath)!.borrowIcon(id: id)!
-        //     icon.updateLayer(newLayer: newLayer)
-        //     emit Updated(iconId: id)
-        // }
 
         pub fun setRoyaltyCut(value: UFix64) {
             EQCollectibles.setRoyaltyCut(value: value)
@@ -1019,12 +1051,14 @@ pub contract EQCollectibles: NonFungibleToken {
         name: String, 
         description: String,
         avatar: String,
+        royalties: [Royalty]
     ) { 
 
         var newProfile <- create ArtistProfile(
             name: name,
             description: description,
             avatar: avatar,
+            royalties: royalties
         )
         let artistId = newProfile.id
         let storagePath = "EQProfile".concat(artistId.toString()).concat("Admin")
@@ -1044,7 +1078,8 @@ pub contract EQCollectibles: NonFungibleToken {
         description: String,
         image: String,
         imageModifier: String?,
-        mintLimit: UInt64
+        mintLimit: UInt64,
+        royalties: [Royalty]
     ) {
 
         var newTemplate <- create CollectibleTemplate(
@@ -1053,7 +1088,8 @@ pub contract EQCollectibles: NonFungibleToken {
             description: description,
             image: image,
             imageModifier: imageModifier,
-            mintLimit: mintLimit
+            mintLimit: mintLimit,
+            royalties: royalties
         )
         self.totalMintedByTemplate[newTemplate.id] = 0
         self.account.borrow<&EQCollectibles.ProfileCollection>(from: EQCollectibles.ProfileStoragePath)!.borrowProfile(artistId: artistId)!.depositTemplate(template: <- newTemplate)
@@ -1068,7 +1104,8 @@ pub contract EQCollectibles: NonFungibleToken {
         image: String,
         imageModifier: String?,
         layer: String,
-        artistId: UInt64
+        artistId: UInt64,
+        royalties: [Royalty]
     ) {
 
         var newTemplate <- create IconTemplate(
@@ -1078,7 +1115,8 @@ pub contract EQCollectibles: NonFungibleToken {
             image: image,
             imageModifier: imageModifier,
             layer: layer,
-            artistId: artistId
+            artistId: artistId,
+            royalties: royalties
         )
         self.totalMintedByTemplate[newTemplate.id] = 0
         self.account.borrow<&EQCollectibles.ProfileCollection>(from: EQCollectibles.ProfileStoragePath)!.borrowProfile(artistId: artistId)!.depositTemplate(template: <- newTemplate)
@@ -1093,7 +1131,8 @@ pub contract EQCollectibles: NonFungibleToken {
         image: String,
         imageModifier: String?,
         layer: String,
-        mintLimit: UInt64
+        mintLimit: UInt64,
+        royalties: [Royalty]
     ) {
         var newTemplate <- create AccessoryTemplate(
             artistId: artistId,
@@ -1104,6 +1143,7 @@ pub contract EQCollectibles: NonFungibleToken {
             imageModifier: imageModifier,
             layer: layer,
             mintLimit: mintLimit,
+            royalties: royalties
         )
         self.totalMintedByTemplate[newTemplate.id] = 0
         self.account.borrow<&EQCollectibles.ProfileCollection>(from: EQCollectibles.ProfileStoragePath)!.borrowProfile(artistId: artistId)!.depositTemplate(template: <- newTemplate)

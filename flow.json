@@ -21,6 +21,10 @@
 		"eqkeys": {
 			"address": "0x179b6b1cb6755e31",
 			"key": "2ecc06b8d08795e75ef3c04ddb85396eb3cd43bb987cf9711863321721af8a5e"
+		},
+		"nftartist": {
+			"address": "0xf3fcd2c1a78f5eee",
+			"key": "07c3640f76419f482e5fc6dd9b90e3d28f50e334a9e0770342b4dc756fd80843"
 		}
 	},
 	"contracts": {
