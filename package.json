@@ -1,7 +1,7 @@
 {
     "scripts": {
       "emulator": "flow emulator --contracts -v",
-      "build": "npm run deploy && npm run setContractRoyalties eqmusic && npm run genAcct1 && npm run genAcct2 && npm run genAcct3 && npm run createProfile1 && npm run createProfile2",
+      "build": "npm run deploy && npm run setContractRoyalties eqmusic && npm run genAcct1 && npm run genAcct2 && npm run genAcct3 && npm run createProfile1 && npm run createProfile2 && npm run seed",
       "setContractRoyalties": "flow transactions send ./txn.setRoyaltiesContract.cdc --signer",
       "profiles": "npm run createProfile1 && npm run createProfile2",
       "deploy": "flow deploy",
@@ -21,11 +21,12 @@
       "changeName": "flow transactions send ./txn.changeProfileName.cdc --signer",
       "changeNameLimited": "flow transactions send ./txn.changeNameLimited.cdc --signer",
       "getProfiles": "flow scripts execute ./script.getProfiles.cdc",
-      "addAdmin": "flow transactions build ./txn.addAdmin.cdc --proposer eqkeys --payer eqkeys --authorizer rapta --authorizer eqkeys --filter payload --save tx1 && flow transactions sign tx1 --signer rapta --filter payload --save tx2 && flow transactions sign tx2 --signer eqkeys --filter payload --save tx3 && flow transactions send-signed tx3",
+      "addAdmin": "flow transactions send ./txn.addAdmin.cdc --signer",
       "unlinkAdmin": "flow transactions send ./txn.unlinkAdmin.cdc --signer",
       "relinkAdmin": "flow transactions send ./txn.relinkAdmin.cdc --signer",
       "templates": "flow scripts execute ./script.viewTemplateDetails.cdc",
-      "setArtistRoyalties": "flow transactions send ./txn.setRoyaltiesArtist.cdc --signer"
+      "setArtistRoyalties": "flow transactions send ./txn.setRoyaltiesArtist.cdc --signer",
+      "setTemplateRoyalties": "flow transactions send ./txn.setRoyaltiesTemplate.cdc --signer"
     }
 }
  

@@ -13,12 +13,19 @@ transaction() {
         self.account = account
         self.royalties = [] 
 
-        let royalty = EQCollectibles.Royalty(
+        let royalty1 = EQCollectibles.Royalty(
             wallet: account.getCapability<&{FungibleToken.Receiver}>(MetadataViews.getRoyaltyReceiverPublicPath()), 
             cut: 0.025,
             type: EQCollectibles.RoyaltyType.percentage
         )
-        self.royalties.append(royalty)
+        self.royalties.append(royalty1)
+
+        let royalty2 = EQCollectibles.Royalty(
+            wallet: account.getCapability<&{FungibleToken.Receiver}>(MetadataViews.getRoyaltyReceiverPublicPath()), 
+            cut: 0.025,
+            type: EQCollectibles.RoyaltyType.percentage
+        )
+        self.royalties.append(royalty2)
     }
 
     execute {
