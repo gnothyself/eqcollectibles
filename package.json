@@ -19,14 +19,14 @@
       "createProfile1": "flow transactions send ./txn.createProfile1.cdc --signer rapta",
       "createProfile2": "flow transactions send ./txn.createProfile2.cdc --signer eqkeys",
       "changeName": "flow transactions send ./txn.changeProfileName.cdc --signer",
-      "changeNameLimited": "flow transactions send ./txn.changeNameLimited.cdc --signer",
       "getProfiles": "flow scripts execute ./script.getProfiles.cdc",
       "addAdmin": "flow transactions send ./txn.addAdmin.cdc --signer",
       "unlinkAdmin": "flow transactions send ./txn.unlinkAdmin.cdc --signer",
       "relinkAdmin": "flow transactions send ./txn.relinkAdmin.cdc --signer",
       "templates": "flow scripts execute ./script.viewTemplateDetails.cdc",
       "setArtistRoyalties": "flow transactions send ./txn.setRoyaltiesArtist.cdc --signer",
-      "setTemplateRoyalties": "flow transactions send ./txn.setRoyaltiesTemplate.cdc --signer"
+      "setTemplateRoyalties": "flow transactions send ./txn.setRoyaltiesTemplate.cdc --signer",
+      "setRoyaltyLimit": "flow transactions send ./txn.setRoyaltiesLimit.cdc --signer"
     }
 }
  

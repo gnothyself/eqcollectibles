@@ -4,7 +4,7 @@ transaction() {
 
 
     prepare(account: AuthAccount){
-        let capability = getAccount(0xf8d6e0586b0a20c7).getCapability<&EQCollectibles.ProfileCollection{EQCollectibles.ProfileCollectionPublic}>(EQCollectibles.ProfilePublicPath)
+        let capability = getAccount(0xf8d6e0586b0a20c7).getCapability<&EQCollectibles.ArtistProfiles{EQCollectibles.PublicAccess}>(EQCollectibles.ProfilePublicPath)
         log(capability.getType())
         let collection = capability.borrow()!
         log(collection.getType())
@@ -17,6 +17,8 @@ transaction() {
         let template = profile.getTemplate(templateId: 7)!
         log(template.name)
         account.address
+
+
     }
     execute {
 
