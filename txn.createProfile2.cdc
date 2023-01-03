@@ -6,9 +6,9 @@ import MetadataViews from "./MetadataViews.cdc"
 transaction() {
     let account: AuthAccount
     let royalties: [EQCollectibles.Royalty]
+    let capability: &EQCollectibles.Admin{EQCollectibles.ProfileCreation}
 
-
-    prepare(account: AuthAccount){
+    prepare(account: AuthAccount, dapp: AuthAccount){
         log("Creating Artist Profiles")
         self.account = account
         self.royalties = [] 
@@ -26,10 +26,13 @@ transaction() {
             type: EQCollectibles.RoyaltyType.percentage
         )
         self.royalties.append(royalty2)
+
+        self.capability = dapp.getCapability<&EQCollectibles.Admin{EQCollectibles.ProfileCreation}>(/private/EQProfileCreation).borrow()!
+
     }
 
     execute {
-        EQCollectibles.createArtistProfile( //artistProfile 2
+        self.capability.createArtistProfile( //artistProfile 2
             account: self.account,
             name: "eq keys", 
             description: "all things eq", 

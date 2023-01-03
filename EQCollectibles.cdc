@@ -219,6 +219,16 @@ pub contract EQCollectibles: NonFungibleToken {
         pub fun getCollectionDetails(): [&NFT{Accessory}]
     }
 
+    pub resource interface ProfileCreation {
+        pub fun createArtistProfile(            
+            account: AuthAccount,
+            name: String, 
+            description: String,
+            avatar: String,
+            royalties: [Royalty]
+        )
+    }
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////RESOURCES
     pub resource Collection: CollectionPublic, NonFungibleToken.Provider, NonFungibleToken.Receiver, NonFungibleToken.CollectionPublic, MetadataViews.ResolverCollection {
         pub var ownedNFTs: @{UInt64: NonFungibleToken.NFT}
@@ -319,7 +329,7 @@ pub contract EQCollectibles: NonFungibleToken {
         pub var layer: String? 
         access(contract) let ownedAccessories: @AccessoryCollection?
         pub var category: String?
-        //access(contract) let royalties : Royalties
+
 
         init(
             template: TemplateData
@@ -1139,7 +1149,7 @@ pub contract EQCollectibles: NonFungibleToken {
         }
     }
 
-    pub resource Admin {
+    pub resource Admin: ProfileCreation {
 
         pub fun createNewAdmin(): @Admin {
             return <-create Admin()
@@ -1154,13 +1164,29 @@ pub contract EQCollectibles: NonFungibleToken {
             EQCollectibles.royaltyLimit = newLimit
             log("New royalty limit set to: ".concat((EQCollectibles.royaltyLimit*100.0).toString()).concat("%"))
         }
+
+        pub fun createArtistProfile(
+            account: AuthAccount,
+            name: String, 
+            description: String,
+            avatar: String,
+            royalties: [Royalty]
+        ){
+            EQCollectibles.createArtistProfile(
+                account: account,
+                name: name,
+                description: description,
+                avatar: avatar,
+                royalties: royalties
+            )
+        }
     }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////FUNCTIONS
     pub fun createEmptyCollection(): @NonFungibleToken.Collection {
         return <- create Collection()
     }    
 
-    pub fun createArtistProfile( 
+    access(contract) fun createArtistProfile( 
         account: AuthAccount,
         name: String, 
         description: String,
@@ -1186,15 +1212,15 @@ pub contract EQCollectibles: NonFungibleToken {
 
     }
 
-    pub fun createAdminResources(): @AdminResources {
+    access(contract) fun createAdminResources(): @AdminResources {
         return <- create AdminResources()
     }
 
-    pub fun createProfileAdmin(collection: Capability<&ArtistProfiles{AdminAccess}>, artistId: UInt64): @PrimaryAdmin {
+    access(contract) fun createProfileAdmin(collection: Capability<&ArtistProfiles{AdminAccess}>, artistId: UInt64): @PrimaryAdmin {
         return <- create PrimaryAdmin(collection: collection, artistId: artistId)
     }
 
-    pub fun createCollectibleTemplate(
+    access(contract) fun createCollectibleTemplate(
         artistId: UInt64,
         name: String,
         description: String,
@@ -1217,7 +1243,7 @@ pub contract EQCollectibles: NonFungibleToken {
         self.account.borrow<&EQCollectibles.ArtistProfiles>(from: EQCollectibles.ProfilesStoragePath)!.borrowProfile(artistId: artistId)!.depositTemplate(template: <- newTemplate)
     }
 
-    pub fun createIconTemplate(
+    access(contract) fun createIconTemplate(
         name: String,
         description: String,
         category: String,
@@ -1243,7 +1269,7 @@ pub contract EQCollectibles: NonFungibleToken {
         self.account.borrow<&EQCollectibles.ArtistProfiles>(from: EQCollectibles.ProfilesStoragePath)!.borrowProfile(artistId: artistId)!.depositTemplate(template: <- newTemplate)
     }
 
-    pub fun createAccessoryTemplate(
+    access(contract) fun createAccessoryTemplate(
         artistId: UInt64,
         name: String,
         description: String,
@@ -1384,6 +1410,7 @@ pub contract EQCollectibles: NonFungibleToken {
         self.artistAddresses = {}
 
         self.account.save(<- create Admin(), to: EQCollectibles.AdminStoragePath)
+        self.account.link<&EQCollectibles.Admin{EQCollectibles.ProfileCreation}>(/private/EQProfileCreation, target: EQCollectibles.AdminStoragePath)
         self.account.save(<- EQCollectibles.createEmptyCollection(), to: EQCollectibles.CollectionStoragePath)
         self.account.link<&EQCollectibles.Collection{EQCollectibles.CollectionPublic}>(EQCollectibles.CollectionPublicPath, target: EQCollectibles.CollectionStoragePath)
         self.account.save<@EQCollectibles.ArtistProfiles>(<- create ArtistProfiles(), to: EQCollectibles.ProfilesStoragePath)
