@@ -202,10 +202,6 @@ pub contract EQCollectibles: NonFungibleToken {
         access(contract) fun setRoyalties(newRoyalties: [Royalty])
     }
 
-    // pub resource interface ProfilePrivate {
-    //     pub fun depositTemplate(template: @AnyResource)
-    // }
-
     pub resource interface LimitedProfileAdmin {
         pub fun accessProfile(): &Profile{AdminProfile}
     }
@@ -885,12 +881,9 @@ pub contract EQCollectibles: NonFungibleToken {
 
         pub fun addAdmin(admin: AuthAccount, newAdmin: Address) {
             let artistId = self.artistId.toString()
-            // let storagePath: String = "EQProfile".concat(artistId).concat("Admin")
-            // let storagePath = "EQAdminResources/primaryAdmin[".concat(artistId).concat("]")
             let privatePathString = "EQProfile".concat(artistId).concat("SecondaryAdmin_").concat(self.incrementTotalAdmins().toString())
             let privatePath = PrivatePath(identifier: privatePathString)!
             let uniqueCapability = admin.link<&AdminResources>(privatePath, target: EQCollectibles.AdminResourcesPath)!
-            // newAdmin.save(<- create SecondaryAdmin(capability: uniqueCapability, artistId: self.artistId), to: StoragePath(identifier: storagePath)!)
             let account = getAccount(newAdmin)
             let adminResources = account.getCapability<&AdminResources{AdminResourcesPublic}>(/public/EQAdminResources).borrow()!
             adminResources.deposit(adminResource: <- create SecondaryAdmin(capability: uniqueCapability, artistId: self.artistId))
@@ -899,7 +892,6 @@ pub contract EQCollectibles: NonFungibleToken {
         pub fun unlinkAdmin(admin: AuthAccount, unlinkId: UInt64) {
             let privatePathString = "EQProfile".concat(self.artistId.toString()).concat("SecondaryAdmin_").concat(unlinkId.toString())
             let privatePath = PrivatePath(identifier: privatePathString)!
-
             admin.unlink(privatePath)
         }
 
@@ -908,11 +900,9 @@ pub contract EQCollectibles: NonFungibleToken {
                 relinkId <= self.totalAdmins : "this link id has not been used yet"
             }
             let artistId = self.artistId.toString()
-            // let storagePath: String = "EQProfile".concat(artistId).concat("Admin")
             let privatePathString = "EQProfile".concat(artistId).concat("SecondaryAdmin_").concat(relinkId.toString())
             let privatePath = PrivatePath(identifier: privatePathString)!
             admin.link<&AdminResources>(privatePath, target: EQCollectibles.AdminResourcesPath)!
-            
         }
 
         pub fun setProfileRoyalties(newRoyalties: [Royalty]) {
@@ -922,6 +912,71 @@ pub contract EQCollectibles: NonFungibleToken {
             }
             let profile = self.accessProfile()
             profile.setRoyalties(newRoyalties: newRoyalties)
+        }
+        
+        pub fun createCollectibleTemplate(
+            name: String,
+            description: String,
+            image: String,
+            imageModifier: String?,
+            mintLimit: UInt64,
+            royalties: [Royalty]
+        ) {
+            EQCollectibles.createCollectibleTemplate(
+                artistId: self.artistId,
+                name: name,
+                description: description,
+                image: image,
+                imageModifier: imageModifier,
+                mintLimit: mintLimit,
+                royalties: royalties
+            )
+        }
+
+        pub fun createIconTemplate(
+            name: String,
+            description: String,
+            category: String,
+            mintLimit: UInt64,
+            image: String,
+            imageModifier: String?,
+            layer: String,
+            royalties: [Royalty]
+        ) {
+            EQCollectibles.createIconTemplate(
+                artistId: self.artistId,
+                name: name,
+                description: description,
+                category: category,
+                mintLimit: mintLimit,
+                image: image,
+                imageModifier: imageModifier,
+                layer: layer,
+                royalties: royalties
+            )
+        }
+
+        pub fun createAccessoryTemplate(
+            name: String,
+            description: String,
+            category: String,
+            image: String,
+            imageModifier: String?,
+            layer: String,
+            mintLimit: UInt64,
+            royalties: [Royalty]
+        ) {
+            EQCollectibles.createAccessoryTemplate(
+                artistId: self.artistId,
+                name: name,
+                description: description,
+                category: category,
+                image: image,
+                imageModifier: imageModifier,
+                layer: layer,
+                mintLimit: mintLimit,
+                royalties: royalties
+            )
         }
 
         pub fun setTemplateRoyalties(templateId: UInt64, newRoyalties: [Royalty]) {
@@ -950,7 +1005,6 @@ pub contract EQCollectibles: NonFungibleToken {
         }
     }
     pub resource SecondaryAdmin {
-        // access(contract) let capability: Capability<&AdminProfile{LimitedProfileAdmin}>
         access(contract) let capability: Capability<&AdminResources>
         access(contract) let artistId: UInt64
 
@@ -963,10 +1017,6 @@ pub contract EQCollectibles: NonFungibleToken {
          }
 
         pub fun accessProfile() :&Profile{AdminProfile} {
-            // let capability = self.capability.borrow() ?? panic("This capability has been unlinked")
-            // let profile = capability.accessProfile() 
-            
-            // return profile
             let collection = self.capability.borrow() ?? panic("This capability has been unlinked")
             let admin = collection.borrowPrimaryAdmin(artistId: self.artistId)!
             let profile = admin.accessProfile()
@@ -1180,6 +1230,84 @@ pub contract EQCollectibles: NonFungibleToken {
                 royalties: royalties
             )
         }
+
+        pub fun createCollectibleTemplate(
+            artistId: UInt64,
+            name: String,
+            description: String,
+            image: String,
+            imageModifier: String?,
+            mintLimit: UInt64,
+            royalties: [Royalty]
+        ) {
+            EQCollectibles.createCollectibleTemplate(
+                artistId: artistId,
+                name: name,
+                description: description,
+                image: image,
+                imageModifier: imageModifier,
+                mintLimit: mintLimit,
+                royalties: royalties
+            )
+        }
+
+        pub fun createIconTemplate(
+            artistId: UInt64,
+            name: String,
+            description: String,
+            category: String,
+            mintLimit: UInt64,
+            image: String,
+            imageModifier: String?,
+            layer: String,
+            royalties: [Royalty]
+        ) {
+            EQCollectibles.createIconTemplate(
+                artistId: artistId,
+                name: name,
+                description: description,
+                category: category,
+                mintLimit: mintLimit,
+                image: image,
+                imageModifier: imageModifier,
+                layer: layer,
+                royalties: royalties
+            )
+        }
+
+        pub fun createAccessoryTemplate(
+            artistId: UInt64,
+            name: String,
+            description: String,
+            category: String,
+            image: String,
+            imageModifier: String?,
+            layer: String,
+            mintLimit: UInt64,
+            royalties: [Royalty]
+        ) {
+            EQCollectibles.createAccessoryTemplate(
+                artistId: artistId,
+                name: name,
+                description: description,
+                category: category,
+                image: image,
+                imageModifier: imageModifier,
+                layer: layer,
+                mintLimit: mintLimit,
+                royalties: royalties    
+            )
+        }
+
+        pub fun mintNFT(artistId: UInt64, templateId: UInt64): @NFT {
+            let profile = EQCollectibles.borrowProfile(artistId: artistId)!
+            let template  = profile.getTemplate(templateId: templateId)!
+            let totalMinted = EQCollectibles.getTotalMintedByTemplate(templateId: templateId)
+            if totalMinted >= template.mintLimit {
+                panic("This collectible has reached its mint limit")
+            }
+            return <- create NFT(template: template)    
+        }
     }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////FUNCTIONS
     pub fun createEmptyCollection(): @NonFungibleToken.Collection {
@@ -1244,6 +1372,7 @@ pub contract EQCollectibles: NonFungibleToken {
     }
 
     access(contract) fun createIconTemplate(
+        artistId: UInt64,
         name: String,
         description: String,
         category: String,
@@ -1251,7 +1380,6 @@ pub contract EQCollectibles: NonFungibleToken {
         image: String,
         imageModifier: String?,
         layer: String,
-        artistId: UInt64,
         royalties: [Royalty]
     ) {
 
@@ -1319,13 +1447,6 @@ pub contract EQCollectibles: NonFungibleToken {
     access(account) fun setRoyalites(newRoyalties: [Royalty]): [EQCollectibles.Royalty] {
         self.royalties = newRoyalties
         return self.royalties
-    }
-
-    pub fun mintIcon(artistId: UInt64, templateId: UInt64, user: Address): @NFT {
-            let profile = EQCollectibles.borrowProfile(artistId: artistId)!
-            let template  = profile.getTemplate(templateId: templateId)!
-
-            return <- create NFT(template: template)    
     }
 
     pub fun addAccessory(account: AuthAccount, iconId: UInt64, accessoryId: UInt64) {
