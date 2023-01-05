@@ -3,12 +3,10 @@ import NonFungibleToken from "./NonFungibleToken.cdc"
 import MetadataViews from "./MetadataViews.cdc"
 
 transaction {
-  let user: AuthAccount
   let collection: &EQCollectibles.Collection
+  let dapp: &EQCollectibles.Admin
 
-  prepare(acct: AuthAccount) {
-    self.user = acct
-
+  prepare(acct: AuthAccount, dapp: AuthAccount) {
 
     if acct.borrow<&EQCollectibles.Collection>(from: EQCollectibles.CollectionStoragePath) == nil {
       let collection <- EQCollectibles.createEmptyCollection()
@@ -17,30 +15,33 @@ transaction {
     }
 
     self.collection = acct.borrow<&EQCollectibles.Collection>(from: EQCollectibles.CollectionStoragePath)
-      ?? panic("This collection does not exist at this address")            
+      ?? panic("This collection does not exist at this address")       
+
+    let admin = dapp.borrow<&EQCollectibles.Admin>(from: EQCollectibles.AdminStoragePath)!
+    self.dapp = admin        
   }
 
   execute {
     //Mint Rapta Collection
-    let token1 <- EQCollectibles.mintIcon(artistId: 1, templateId: 1, user: self.user.address)
+    let token1 <- self.dapp.mintNFT(artistId: 1, templateId: 1)
     self.collection.deposit(token: <- token1)
-    let token2 <- EQCollectibles.mintIcon(artistId: 1, templateId: 3, user: self.user.address)
+    let token2 <- self.dapp.mintNFT(artistId: 1, templateId: 2)
     self.collection.deposit(token: <- token2)
-    let token3 <- EQCollectibles.mintIcon(artistId: 1, templateId: 5, user: self.user.address)
+    let token3 <- self.dapp.mintNFT(artistId: 1, templateId: 3)
     self.collection.deposit(token: <- token3)
-    let token4 <- EQCollectibles.mintIcon(artistId: 1, templateId: 6, user: self.user.address)
+    let token4 <- self.dapp.mintNFT(artistId: 1, templateId: 4)
     self.collection.deposit(token: <- token4)
-    let token5 <- EQCollectibles.mintIcon(artistId: 1, templateId: 7, user: self.user.address)
+    let token5 <- self.dapp.mintNFT(artistId: 1, templateId: 5)
     self.collection.deposit(token: <- token5)
 
     //Mint Keys
-    let token6 <- EQCollectibles.mintIcon(artistId: 2, templateId: 2, user: self.user.address)
+    let token6 <- self.dapp.mintNFT(artistId: 2, templateId: 6)
     self.collection.deposit(token: <- token6)
-    let token7 <- EQCollectibles.mintIcon(artistId: 2, templateId: 2, user: self.user.address)
+    let token7 <- self.dapp.mintNFT(artistId: 2, templateId: 6)
     self.collection.deposit(token: <- token7)
-    let token8 <- EQCollectibles.mintIcon(artistId: 2, templateId: 2, user: self.user.address)
+    let token8 <- self.dapp.mintNFT(artistId: 2, templateId: 6)
     self.collection.deposit(token: <- token8)
-    let token9 <- EQCollectibles.mintIcon(artistId: 2, templateId: 4, user: self.user.address)
+    let token9 <- self.dapp.mintNFT(artistId: 2, templateId: 7)
     self.collection.deposit(token: <- token9)
 
     log("NFT minted")

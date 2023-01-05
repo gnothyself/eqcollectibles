@@ -3,8 +3,8 @@ import EQCollectibles from "./EQCollectibles.cdc"
 pub fun main(artistId: UInt64): {UInt64: [String]} {
     let account = getAccount(0xf8d6e0586b0a20c7)
     let collection = account
-        .getCapability(EQCollectibles.ProfilePublicPath)
-        .borrow<&EQCollectibles.ProfileCollection{EQCollectibles.ProfileCollectionPublic}>()
+        .getCapability(EQCollectibles.ProfilesPublicPath)
+        .borrow<&EQCollectibles.ArtistProfiles{EQCollectibles.PublicAccess}>()
         ?? panic("Could not borrow a reference to the collection")
 
 
