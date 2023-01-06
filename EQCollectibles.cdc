@@ -722,10 +722,7 @@ pub contract EQCollectibles: NonFungibleToken {
             return self.collectibleTemplates.length
         }
 
-        access(contract) fun borrowCollectibleTemplate(templateId: UInt64): &CollectibleTemplate {    
-            pre{
-                self.locked == false : "This profile is locked"
-            }        
+        access(contract) fun borrowCollectibleTemplate(templateId: UInt64): &CollectibleTemplate {           
             log("borrowing collectible")
             let ref = &self.collectibleTemplates[templateId] as auth &AnyResource
             let template = ref as! &CollectibleTemplate
@@ -733,9 +730,6 @@ pub contract EQCollectibles: NonFungibleToken {
         }
 
         access(contract) fun borrowIconTemplate(templateId: UInt64): &IconTemplate  {
-            pre{
-                self.locked == false : "This profile is locked"
-            } 
             log("borrowing icon")
             let ref = &self.collectibleTemplates[templateId] as auth &AnyResource
             let template = ref as! &IconTemplate
@@ -743,25 +737,16 @@ pub contract EQCollectibles: NonFungibleToken {
         }
 
         access(contract) fun borrowAccessoryTemplate(templateId: UInt64): &AccessoryTemplate  {
-            pre{
-                self.locked == false : "This profile is locked"
-            } 
             log("borrowing accessory")
             let ref = &self.collectibleTemplates[templateId] as auth &AnyResource
             let template = ref as! &AccessoryTemplate
             return template
         }
 
-        // pub fun depositCollectibleTemplate(template: @EQCollectibles.CollectibleTemplate) {
-        //     let id: UInt64 = template.id
-        //     let oldTemplate <- self.collectibleTemplates[id] <- template
-        //     destroy oldTemplate
-        // }
-
         pub fun borrowCollection(): {UInt64: AnyStruct} {
-            pre{
-                self.locked == false : "This profile is locked"
-            } 
+            // pre{
+            //     self.locked == false : "This profile is locked"
+            // } 
             var collection: {UInt64: AnyStruct} = {}
             for templateId in self.collectibleTemplates.keys {
                 let ref = (&self.collectibleTemplates[templateId] as auth &AnyResource?)!
@@ -800,8 +785,14 @@ pub contract EQCollectibles: NonFungibleToken {
             log("profile name changed to ".concat(newName))
         }
 
-        pub fun changeDescription(newDescription: String){}
-        pub fun changeAvatar(newAvatar: String){}
+        pub fun changeDescription(newDescription: String){
+            self.description = newDescription
+        }
+
+        pub fun changeAvatar(newAvatar: String){
+            self.avatar = newAvatar
+        }
+
         pub fun borrowTemplate(templateId: UInt64): auth &AnyResource {
             pre{
                 self.locked == false : "This profile is locked"
@@ -899,9 +890,13 @@ pub contract EQCollectibles: NonFungibleToken {
         }
 
         pub fun accessProfile(): &Profile{AdminProfile} {
+            post {
+                !result.locked : "This profile is locked"
+            }
             let collection = self.collection.borrow()!
             let profile = collection.borrowProfile(artistId: self.artistId)
             return profile!
+
         }
 
         access(contract) fun incrementTotalAdmins(): UInt64 {
@@ -911,7 +906,7 @@ pub contract EQCollectibles: NonFungibleToken {
 
         pub fun addAdmin(admin: AuthAccount, newAdmin: Address) {
             pre {
-                self.accessProfile().locked == false : "This profile is locked"
+                !self.accessProfile().locked : "This profile is locked"
             }
             let artistId = self.artistId.toString()
             let privatePathString = "EQProfile".concat(artistId).concat("SecondaryAdmin_").concat(self.incrementTotalAdmins().toString())
@@ -930,7 +925,7 @@ pub contract EQCollectibles: NonFungibleToken {
 
         pub fun relinkAdmin(admin: AuthAccount, relinkId: UInt64) {
             pre {
-                self.accessProfile().locked == false : "This profile is locked"
+                !self.accessProfile().locked : "This profile is locked"
                 relinkId <= self.totalAdmins : "this link id has not been used yet"
             }
             let artistId = self.artistId.toString()
@@ -941,7 +936,7 @@ pub contract EQCollectibles: NonFungibleToken {
 
         pub fun setProfileRoyalties(newRoyalties: [Royalty]) {
             pre {
-                self.accessProfile().locked == false : "This profile is locked"
+                // !self.accessProfile().locked : "This profile is locked"
                 EQCollectibles.getCutTotal(royalties: newRoyalties) +  EQCollectibles.getHighestTemplateCut(artistId: self.artistId) <= EQCollectibles.royaltyLimit
                     : "Royaly limit is ".concat(Int(EQCollectibles.royaltyLimit * 100.0).toString().concat("%"))
             }
@@ -1282,6 +1277,12 @@ pub contract EQCollectibles: NonFungibleToken {
             let profiles = EQCollectibles.account.borrow<&ArtistProfiles>(from: EQCollectibles.ProfilesStoragePath)!
             let profile = profiles.borrowProfile(artistId: artistId) ?? panic("There is not profile with this id")
             profile.lockProfile()
+        }
+
+        pub fun unlockProfile(artistId: UInt64){
+            let profiles = EQCollectibles.account.borrow<&ArtistProfiles>(from: EQCollectibles.ProfilesStoragePath)!
+            let profile = profiles.borrowProfile(artistId: artistId) ?? panic("There is not profile with this id")
+            profile.unlockProfile()
         }
 
         pub fun createCollectibleTemplate(
