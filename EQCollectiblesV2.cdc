@@ -434,8 +434,8 @@ pub contract EQCollectibles: NonFungibleToken {
     }
 
     // AdminResources is a collection that stores admin resources for accessing artist profiles. This collection stores both PrimaryAdmin and SecondaryAdmin resources.
-    // Borrowing a PrimaryAdmin comes with special privileges and functions stored in the PrimaryAdmin resource. Borrowing a profile (borrowProfile()) is used for SecondaryAdmins to 
-    // gain accesses to a Profile{AdminAccess}.
+    // Borrowing a PrimaryAdmin comes with special privileges and functions stored in the PrimaryAdmin resource. Borrowing a profile (borrowProfile()) is used to 
+    // gain accesses to a Profile{AdminProfile}.
     pub resource AdminResources: AdminResourcesPublic {
         pub var primaryAdmin: @{UInt64: PrimaryAdmin}
         pub var secondaryAdmin: @{UInt64: SecondaryAdmin}
@@ -499,10 +499,17 @@ pub contract EQCollectibles: NonFungibleToken {
         }
     }
 
+    //This interface publicly exposes the deposit function of AdminResources, so a PrimaryAdmin can create and deposit a SecondaryAdmin resource to another wallet.
     pub resource interface AdminResourcesPublic {
         pub fun deposit(adminResource: @AnyResource)
     }
 
+    // @PrimaryAdmin is a resource created together with a @Profile. The @Profile is stored in EQ Music's wallet, and the @PrimaryAdmin is stored in the @AdminResources of the admin's wallet.
+    // This resource stores a capability that references EQ Music's @ArtistProfiles collection, restricted by the {AdminAccess} interface. To prevent the admin from being able to access all profiles within
+    // @ArtistProfiles, the capability is only accessabile by the EQCollectibles contract. Access to the profile is granted via the accessProfile() function, which borrows the capability and uses another variable 
+    // stored in the resource, artistId, to access the appropriate profile. This resource also gives the admin the ability to manage royalties and collectible templates. The owner of @PrimaryAdmin can also
+    // create a @SecondaryAdmin and store within it a Capability linked to the admins own @AdminResources by a unique private path. This private path can be unlinked and linked again in order to revoke or reinstate 
+    // secondary admin access.
     pub resource PrimaryAdmin {
         access(contract) let collection: Capability<&ArtistProfiles{AdminAccess}>
         access(contract) let artistId: UInt64
@@ -564,7 +571,6 @@ pub contract EQCollectibles: NonFungibleToken {
 
         pub fun setProfileRoyalties(newRoyalties: [Royalty]) {
             pre {
-                // !self.accessProfile().locked : "This profile is locked"
                 EQCollectibles.getCutTotal(royalties: newRoyalties) +  EQCollectibles.getHighestTemplateCut(artistId: self.artistId) <= EQCollectibles.royaltyLimit
                     : "Royaly limit is ".concat(Int(EQCollectibles.royaltyLimit * 100.0).toString().concat("%"))
             }
@@ -605,7 +611,7 @@ pub contract EQCollectibles: NonFungibleToken {
             royalties: [Royalty]
         ) {
             pre {
-                self.accessProfile().locked == false : "This profile is locked"
+                !self.accessProfile().locked : "This profile is locked"
             }
             EQCollectibles.createIconTemplate(
                 artistId: self.artistId,
@@ -631,7 +637,7 @@ pub contract EQCollectibles: NonFungibleToken {
             royalties: [Royalty]
         ) {
             pre {
-                self.accessProfile().locked == false : "This profile is locked"
+                !self.accessProfile().locked : "This profile is locked"
             }
             EQCollectibles.createAccessoryTemplate(
                 artistId: self.artistId,
@@ -648,7 +654,7 @@ pub contract EQCollectibles: NonFungibleToken {
 
         pub fun setTemplateRoyalties(templateId: UInt64, newRoyalties: [Royalty]) {
             pre {
-                self.accessProfile().locked == false : "This profile is locked"
+                !self.accessProfile().locked! : "This profile is locked"
             }
             let profile = self.accessProfile()
             let artistCutTotal = EQCollectibles.getCutTotal(royalties: profile.royalties)
@@ -675,6 +681,9 @@ pub contract EQCollectibles: NonFungibleToken {
         }
     }
 
+    //@SecondaryAdmin stores a Capability via a unique private path linked to a profile admins @AdminResources. Similar to a @PrimaryAdmin, the Capability is only accessable by the EQCollectibles contract and provides
+    // access to a profile by the sole function of @SecondaryAdmin, accessProfile(). This function borrows the stored Capability, and uses the stored artistId to access the profile from the granting admin's @PrimaryAdmin
+    // resource.
     pub resource SecondaryAdmin {
         access(contract) let capability: Capability<&AdminResources>
         access(contract) let artistId: UInt64
@@ -694,9 +703,6 @@ pub contract EQCollectibles: NonFungibleToken {
             return profile
         }
     }
-    // pub resource interface LimitedProfileAdmin {
-    //     pub fun accessProfile(): &Profile{AdminProfile}
-    // }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////INTERFACES
 
@@ -743,31 +749,9 @@ pub contract EQCollectibles: NonFungibleToken {
         pub var layer: String?
     }
 
-    // pub resource interface PublicAccess {
-    //     pub fun borrowProfile(artistId: UInt64): &EQCollectibles.Profile{PublicProfile}? {
-    //         post {
-    //             (result == nil) || (result?.id == artistId):
-    //             "Cannot borrow profile reference: The ID of the returned reference is incorrect"
-    //         }
-    //     }
+    // pub resource interface TemplatePublic {
+    //     pub fun updateName(newName: String)
     // }
-
-    // pub resource interface AdminAccess {
-    //     pub fun borrowProfile(artistId: UInt64): &EQCollectibles.Profile{AdminProfile}? {
-    //         post {
-    //             (result == nil) || (result?.id == artistId):
-    //             "Cannot borrow profile reference: The ID of the returned reference is incorrect"
-    //         }
-    //     }
-    // }
-
-
-
-
-
-    pub resource interface TemplatePublic {
-        pub fun updateName(newName: String)
-    }
 
     pub resource interface PublicAccessoryCollection {
         pub fun borrowNFT(category: String): &NFT{Accessory} 
@@ -1100,7 +1084,7 @@ pub contract EQCollectibles: NonFungibleToken {
 
 
 
-    pub resource CollectibleTemplate: TemplatePublic {
+    pub resource CollectibleTemplate {
         pub let id: UInt64  //global id
         pub let artistId: UInt64
         pub let artistTemplate: UInt64 //id specific to artist profile
@@ -1151,7 +1135,7 @@ pub contract EQCollectibles: NonFungibleToken {
             self.royalties = newRoyalties
         }
     }
-    pub resource IconTemplate: TemplatePublic {
+    pub resource IconTemplate {
         pub let id: UInt64  //global id
         pub let artistId: UInt64
         pub let artistTemplate: UInt64 //id specific to artist profile
