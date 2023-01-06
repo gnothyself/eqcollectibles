@@ -25,7 +25,6 @@ pub contract EQCollectibles: NonFungibleToken {
     pub var totalTemplates: UInt64
     pub var royalties: [Royalty]
     pub var royaltyLimit: UFix64
-    access(contract) var artistAddresses: {UInt64: Address}
     access(contract) let totalMintedByTemplate: {UInt64: UInt64}
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////ROYALTIES
     pub enum RoyaltyType: UInt8{
@@ -1531,10 +1530,6 @@ pub contract EQCollectibles: NonFungibleToken {
         }
     }
 
-    pub fun getArtistAddresses(): {UInt64: Address} {
-        return self.artistAddresses
-    }
-
     access(contract) fun getCutTotal(royalties: [Royalty]): UFix64{
         var cutTotal:UFix64 = 0.0
         for royalty in royalties {
@@ -1574,15 +1569,13 @@ pub contract EQCollectibles: NonFungibleToken {
         self.ProfilesPublicPath = /public/EQProfiles
         self.ProfilesPrivatePath = /private/EQProfiles
         self.AdminResourcesPath = /storage/EQAdminResources
+
         self.totalSupply = 0
         self.totalProfiles = 0
         self.totalTemplates = 0
         self.totalMintedByTemplate = {}
-
         self.royalties = []
         self.royaltyLimit = 0.07
-
-        self.artistAddresses = {}
 
         self.account.save(<- create Admin(), to: EQCollectibles.AdminStoragePath)
         self.account.link<&EQCollectibles.Admin{EQCollectibles.ProfileCreation}>(/private/EQProfileCreation, target: EQCollectibles.AdminStoragePath)
