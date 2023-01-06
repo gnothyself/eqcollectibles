@@ -10,3 +10,4 @@ transaction(artistId: UInt64, newAdmin: Address) {
     }
         
 }
+ 

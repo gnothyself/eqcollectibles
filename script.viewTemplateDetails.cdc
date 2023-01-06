@@ -7,7 +7,6 @@ pub fun main(artistId: UInt64): {UInt64: [String]} {
         .borrow<&EQCollectibles.ArtistProfiles{EQCollectibles.PublicAccess}>()
         ?? panic("Could not borrow a reference to the collection")
 
-
     let profile = collection.borrowProfile(artistId: artistId)!
     let savedTemplates: {UInt64: [String]} = {}
 
@@ -30,5 +29,6 @@ pub fun main(artistId: UInt64): {UInt64: [String]} {
         detail.append(templateName)
         savedTemplates[key] = detail
     }
+    
     return savedTemplates
 }
