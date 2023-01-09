@@ -19,14 +19,14 @@ pub contract EQCollectibles: NonFungibleToken {
     pub event Mint(id: UInt64, artistId: UInt64, templateId: UInt64)
 	pub event AccessoryAdded(iconId: UInt64, accessoryId: UInt64)
 	pub event AccessoryRemoved(iconId: UInt64, accessoryId: UInt64)
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////VARIABLES
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////CONTRACT VARIABLES & ROYALTIES
     pub var totalSupply: UInt64
     pub var totalProfiles: UInt64
     pub var totalTemplates: UInt64
     pub var royalties: [Royalty]
     pub var royaltyLimit: UFix64
     access(contract) let totalMintedByTemplate: {UInt64: UInt64}
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////ROYALTIES
+
     pub enum RoyaltyType: UInt8{
         pub case fixed
         pub case percentage
@@ -53,52 +53,7 @@ pub contract EQCollectibles: NonFungibleToken {
             self.type=type
         }
     }
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////STRUCTS
-    pub struct TemplateData {
-        pub let id: UInt64  //global id
-        pub let artistId: UInt64
-        pub let applicableArtists: [UInt64]?
-        pub let artistTemplate: UInt64 //id specific to artist profile
-        pub var name: String
-        pub var description: String
-        pub var image: String
-        pub var imageModifier: String?
-        pub var mintLimit: UInt64
-        pub var ownsAccessories: Bool
-        pub var layer: String?
-        pub var category: String?
-        pub var royalties: [Royalty]
 
-        init(
-            id: UInt64,
-            artistId: UInt64,
-            artistTemplate: UInt64,
-            applicableArtists: [UInt64]?,
-            name: String,
-            description: String,
-            image: String,
-            imageModifier: String?,
-            mintLimit: UInt64,
-            ownsAccessories: Bool,
-            layer: String?,
-            category: String?,
-            royalties: [Royalty]
-        ) {
-            self.id = id
-            self.artistId = artistId
-            self.artistTemplate = artistTemplate
-            self.applicableArtists = applicableArtists
-            self.name = name
-            self.description = description
-            self.image = image
-            self.imageModifier = imageModifier
-            self.mintLimit = mintLimit
-            self.ownsAccessories = ownsAccessories
-            self.layer = layer
-            self.category = category
-            self.royalties = royalties
-        }
-    }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////ARTIST PROFILES & PROFILE ADMIN RESOURCES
     // PROFILE COLLECTION & INTERFACES
     // ArtistProfiles is the collection where all profiles are stored. This collection is owned by EQ Music and a private capability to 
@@ -242,7 +197,6 @@ pub contract EQCollectibles: NonFungibleToken {
                         return TemplateData(
                             id: templateId, 
                             artistId: template.artistId, 
-                            artistTemplate: template.artistTemplate, 
                             applicableArtists: nil,
                             name: template.name, 
                             description: template.description, 
@@ -260,7 +214,6 @@ pub contract EQCollectibles: NonFungibleToken {
                         return TemplateData(
                             id: templateId, 
                             artistId: template.artistId, 
-                            artistTemplate: template.artistTemplate, 
                             applicableArtists: nil,
                             name: template.name, 
                             description: template.description, 
@@ -277,7 +230,6 @@ pub contract EQCollectibles: NonFungibleToken {
                         return TemplateData(
                             id: templateId, 
                             artistId: template.artistId, 
-                            artistTemplate: template.artistTemplate, 
                             applicableArtists: template.applicableArtists,
                             name: template.name, 
                             description: template.description, 
@@ -433,7 +385,7 @@ pub contract EQCollectibles: NonFungibleToken {
         access(contract) fun setRoyalties(newRoyalties: [Royalty])
     }
 
-    // AdminResources is a collection that stores admin resources for accessing artist profiles. This collection stores both PrimaryAdmin and SecondaryAdmin resources.
+    // AdminResources is a collection that stores resources for profile administrators. This collection stores both PrimaryAdmin and SecondaryAdmin resources.
     // Borrowing a PrimaryAdmin comes with special privileges and functions stored in the PrimaryAdmin resource. Borrowing a profile (borrowProfile()) is used to 
     // gain accesses to a Profile{AdminProfile}.
     pub resource AdminResources: AdminResourcesPublic {
@@ -704,8 +656,233 @@ pub contract EQCollectibles: NonFungibleToken {
         }
     }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////INTERFACES
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////COLLECTIBLE TEMPLATES
+    // The @CollectibleTemplate is used to create general NFTs. This template holds the basic information to populate the NFT initializing function and can be 
+    // modified by the profile admins. Each template resource contains the relevant fields for how the NFTs will be used (as a collectible, and icon, or an accessory). 
+    // The imageModifier field is used by the MetadataResolver. If each individual collectible has the same image, then a imageModifier is not used. If each individual 
+    // collectible is unique, the image field will point to the ipfs folder containing each individual image, and the imageModifier will hold the file extension (ex: .png).
+    // The MetadataResolver will append the tokenId and the imageModifier to the end of the image address to return the correct NFT image file. 
+    pub resource CollectibleTemplate {
+        pub let id: UInt64 
+        pub let artistId: UInt64
+        pub var name: String
+        pub var description: String
+        pub var image: String
+        pub var imageModifier: String?
+        pub var mintLimit: UInt64
+        pub var royalties: [Royalty]
 
+        init(
+            artistId: UInt64,
+            name: String,
+            description: String,
+            image: String,
+            imageModifier: String?,
+            mintLimit: UInt64,
+            royalties: [Royalty]
+        ) {
+            EQCollectibles.totalTemplates = EQCollectibles.totalTemplates + 1
+            self.id = EQCollectibles.totalTemplates
+            self.artistId = artistId
+            self.name = name
+            self.description = description
+            self.mintLimit = mintLimit
+            self.image = image
+            self.imageModifier = imageModifier
+            self.royalties = royalties
+        }
+
+        pub fun updateImage(newImage: String) {
+            self.image = newImage
+        }
+        pub fun updateDescription(newDescription: String) {
+            self.description = newDescription
+        }
+        pub fun updateName(newName: String){
+            self.name = newName
+        }
+        pub fun updateMintLimit(newLimit: UInt64){
+            self.mintLimit = newLimit
+        }
+
+        access(contract) fun setRoyalties(newRoyalties: [Royalty]){
+            self.royalties = newRoyalties
+        }
+    }
+
+    // The @IconTemplate is used for EQ Icons. Icons are composable NFTs meant to represent the artist. The image field for an Icon is not an IPFS address, but rather an eqmusic.io
+    // address. The EQ backend composes the image based on the layer field (the base layer of the composable NFT) and the layers of each accessory (@AccessoryTemplate) held in the 
+    // icon @NFT's @AccessoryCollection. In the template, the boolean field ownedAccessories determines if the @NFT initializer should create an @AccessoryCollection for the @NFT.
+    pub resource IconTemplate {
+        pub let id: UInt64  
+        pub let artistId: UInt64
+        pub var name: String
+        pub var description: String
+        pub var mintLimit: UInt64
+        pub var ownedAccessories: Bool
+        pub var image: String
+        pub var imageModifier: String?
+        pub var layer: String
+        pub var royalties: [Royalty]
+
+        init(
+            name: String,
+            description: String,
+            mintLimit: UInt64,
+            image: String,
+            imageModifier: String?,
+            layer: String,
+            artistId: UInt64,
+            royalties: [Royalty]
+        ) {
+            EQCollectibles.totalTemplates = EQCollectibles.totalTemplates + 1
+            self.id = EQCollectibles.totalTemplates
+            self.artistId = artistId
+            self.name = name
+            self.description = description
+            self.mintLimit = mintLimit
+            self.ownedAccessories = true
+            self.image = image
+            self.imageModifier = imageModifier
+            self.layer = layer
+            self.royalties = royalties
+        }
+
+        pub fun updateImage(newImage: String) {
+            self.image = newImage
+        }
+        pub fun updateLayer(newLayer: String) {
+            self.layer = newLayer
+        }
+        pub fun updateDescription(newDescription: String) {
+            self.description = newDescription
+        }
+        pub fun updateName(newName: String){
+            self.name = newName
+        }
+        pub fun updateMintLimit(newLimit: UInt64){
+            self.mintLimit = newLimit
+        }
+
+        access(contract) fun setRoyalties(newRoyalties: [Royalty]){
+            self.royalties = newRoyalties
+        }
+    }
+
+    // The @AccessoryTemplate is used for create accessory @NFTs for icon @NFTs. The image field for accessories are IPFS addresses and is used for marketplace views, while the layer
+    // field hold the .png neccessary for compiling the icon @NFT image by the EQ backend. Additionally, the @AccessoryTemplate has an extra field, category. This field is used as a 
+    // label for what type of accessory the template is (hat, pants, jacket, etc).
+    pub resource AccessoryTemplate {
+        pub let id: UInt64
+        pub let artistId: UInt64
+        pub var applicableArtists: [UInt64]
+        pub var name: String
+        pub var description: String
+        pub var category: String
+        pub var mintLimit: UInt64
+        pub var image: String
+        pub var imageModifier: String?
+        pub var layer: String?
+        pub var royalties: [Royalty]
+
+        init(
+            artistId: UInt64,
+            name: String,
+            description: String,
+            category: String,
+            image: String,
+            imageModifier: String?,
+            layer: String,
+            mintLimit: UInt64,
+            royalties: [Royalty]
+        ) {
+            EQCollectibles.totalTemplates = EQCollectibles.totalTemplates + 1
+            self.id = EQCollectibles.totalTemplates
+            self.artistId = artistId
+            self.applicableArtists = [artistId]
+            self.name = name
+            self.description = description
+            self.category = category
+            self.mintLimit = mintLimit
+            self.image = image
+            self.imageModifier = imageModifier
+            self.layer = layer
+            self.royalties = royalties
+        }
+
+        pub fun updateImage(newImage: String) {
+            self.image = newImage
+        }
+        pub fun updateLayer(newLayer: String) {
+            self.layer = newLayer
+        }
+        pub fun updateDescription(newDescription: String) {
+            self.description = newDescription
+        }
+        pub fun updateCategory(newCategory: String){
+            self.category = newCategory
+        }
+        pub fun updateName(newName: String){
+            self.name = newName
+        }
+        pub fun updateMintLimit(newLimit: UInt64){
+            self.mintLimit = newLimit
+        } 
+        pub fun addApplicableArtist(artistId: UInt64) {
+            self.applicableArtists.append(artistId)
+            log(self.applicableArtists)
+        }
+        access(contract) fun setRoyalties(newRoyalties: [Royalty]){
+            self.royalties = newRoyalties
+        }
+    }
+
+    // This struct is a universal template struct, utilizing optionals, to return the data of each Template to the @NFT initializer. This is used by the getTemplate() function of an
+    // artist @Profile.
+    pub struct TemplateData {
+        pub let id: UInt64  //global id
+        pub let artistId: UInt64
+        pub let applicableArtists: [UInt64]?
+        pub var name: String
+        pub var description: String
+        pub var image: String
+        pub var imageModifier: String?
+        pub var mintLimit: UInt64
+        pub var ownsAccessories: Bool
+        pub var layer: String?
+        pub var category: String?
+        pub var royalties: [Royalty]
+
+        init(
+            id: UInt64,
+            artistId: UInt64,
+            applicableArtists: [UInt64]?,
+            name: String,
+            description: String,
+            image: String,
+            imageModifier: String?,
+            mintLimit: UInt64,
+            ownsAccessories: Bool,
+            layer: String?,
+            category: String?,
+            royalties: [Royalty]
+        ) {
+            self.id = id
+            self.artistId = artistId
+            self.applicableArtists = applicableArtists
+            self.name = name
+            self.description = description
+            self.image = image
+            self.imageModifier = imageModifier
+            self.mintLimit = mintLimit
+            self.ownsAccessories = ownsAccessories
+            self.layer = layer
+            self.category = category
+            self.royalties = royalties
+        }
+    }
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////COLLECTIBLES
+    //NFT COLLECTION & INTERFACE
     pub resource interface CollectionPublic {    
         pub fun deposit(token: @NonFungibleToken.NFT) 
 		pub fun getIDs(): [UInt64]
@@ -713,62 +890,6 @@ pub contract EQCollectibles: NonFungibleToken {
         pub fun borrowCollectible(id: UInt64): &NFT{Public}
     }
 
-    pub resource interface Public {
-        pub let id: UInt64
-        pub let name: String
-        pub let description: String
-        pub let artistId: UInt64
-        pub let templateId: UInt64
-        pub var category: String?
-
-        pub fun borrowAccessories(): [&NFT{Accessory}]?         
-    
-    }
-
-    pub resource interface Icon {
-        pub let id: UInt64
-        pub let artistId: UInt64
-        pub let templateId: UInt64
-        pub let name: String
-        pub let description: String
-        pub var layer: String?
-
-        pub fun addAccessory(accessory: @NFT): @NFT?
-        pub fun removeAccessory(category: String): @NFT?
-        pub fun accessAccessories(): &AccessoryCollection? 
-        pub fun getOwnedAccessoriesType(): Type
-    }
-
-    pub resource interface Accessory {
-        pub let id: UInt64
-        pub let artistId: UInt64
-        pub let templateId: UInt64
-        pub let name: String
-        pub let description: String
-        pub var category: String?
-        pub var layer: String?
-    }
-
-    // pub resource interface TemplatePublic {
-    //     pub fun updateName(newName: String)
-    // }
-
-    pub resource interface PublicAccessoryCollection {
-        pub fun borrowNFT(category: String): &NFT{Accessory} 
-        pub fun getCollectionDetails(): [&NFT{Accessory}]
-    }
-
-    pub resource interface ProfileCreation {
-        pub fun createArtistProfile(            
-            account: AuthAccount,
-            name: String, 
-            description: String,
-            avatar: String,
-            royalties: [Royalty]
-        )
-    }
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////RESOURCES
     pub resource Collection: CollectionPublic, NonFungibleToken.Provider, NonFungibleToken.Receiver, NonFungibleToken.CollectionPublic, MetadataViews.ResolverCollection {
         pub var ownedNFTs: @{UInt64: NonFungibleToken.NFT}
 
@@ -856,7 +977,10 @@ pub contract EQCollectibles: NonFungibleToken {
             let EQCollectibles = nft as! &EQCollectibles.NFT
             return EQCollectibles
         }
-    }    
+    }  
+
+    //NFT, ACCESSORY COLLECTION & INTERFACES
+
     pub resource NFT: NonFungibleToken.INFT, Public, Icon, Accessory, MetadataViews.Resolver {
         pub let id: UInt64
         pub let artistId: UInt64
@@ -1040,7 +1164,43 @@ pub contract EQCollectibles: NonFungibleToken {
             }
             return nil
         }
-    }  
+    } 
+
+    pub resource interface Public {
+        pub let id: UInt64
+        pub let name: String
+        pub let description: String
+        pub let artistId: UInt64
+        pub let templateId: UInt64
+        pub var category: String?
+
+        pub fun borrowAccessories(): [&NFT{Accessory}]?         
+    }
+
+    pub resource interface Icon {
+        pub let id: UInt64
+        pub let artistId: UInt64
+        pub let templateId: UInt64
+        pub let name: String
+        pub let description: String
+        pub var layer: String?
+
+        pub fun addAccessory(accessory: @NFT): @NFT?
+        pub fun removeAccessory(category: String): @NFT?
+        pub fun accessAccessories(): &AccessoryCollection? 
+        pub fun getOwnedAccessoriesType(): Type
+    }
+
+    pub resource interface Accessory {
+        pub let id: UInt64
+        pub let artistId: UInt64
+        pub let templateId: UInt64
+        pub let name: String
+        pub let description: String
+        pub var category: String?
+        pub var layer: String?
+    }
+
     pub resource AccessoryCollection: PublicAccessoryCollection {
         pub var ownedNFTs: @{String: NFT}
 
@@ -1082,182 +1242,12 @@ pub contract EQCollectibles: NonFungibleToken {
 
     }
 
-
-
-    pub resource CollectibleTemplate {
-        pub let id: UInt64  //global id
-        pub let artistId: UInt64
-        pub let artistTemplate: UInt64 //id specific to artist profile
-        pub var name: String
-        pub var description: String
-        pub var image: String
-        pub var imageModifier: String?
-        pub var mintLimit: UInt64
-        pub var layer: String?
-        pub var royalties: [Royalty]
-
-        init(
-            artistId: UInt64,
-            name: String,
-            description: String,
-            image: String,
-            imageModifier: String?,
-            mintLimit: UInt64,
-            royalties: [Royalty]
-        ) {
-            EQCollectibles.totalTemplates = EQCollectibles.totalTemplates + 1
-            self.id = EQCollectibles.totalTemplates
-            self.artistId = artistId
-            self.artistTemplate = EQCollectibles.incrementTemplateNumber(artistId: artistId)
-            self.name = name
-            self.description = description
-            self.mintLimit = mintLimit
-            self.image = image
-            self.imageModifier = imageModifier
-            self.layer = nil
-            self.royalties = royalties
-        }
-
-        pub fun updateImage(newImage: String) {
-            self.image = newImage
-        }
-        pub fun updateDescription(newDescription: String) {
-            self.description = newDescription
-        }
-        pub fun updateName(newName: String){
-            self.name = newName
-        }
-        pub fun updateMintLimit(newLimit: UInt64){
-            self.mintLimit = newLimit
-        }
-
-        access(contract) fun setRoyalties(newRoyalties: [Royalty]){
-            self.royalties = newRoyalties
-        }
+    pub resource interface PublicAccessoryCollection {
+        pub fun borrowNFT(category: String): &NFT{Accessory} 
+        pub fun getCollectionDetails(): [&NFT{Accessory}]
     }
-    pub resource IconTemplate {
-        pub let id: UInt64  //global id
-        pub let artistId: UInt64
-        pub let artistTemplate: UInt64 //id specific to artist profile
-        pub var name: String
-        pub var description: String
-        pub var mintLimit: UInt64
-        pub var ownedAccessories: Bool
-        pub var image: String
-        pub var imageModifier: String?
-        pub var layer: String
-        pub var royalties: [Royalty]
 
-        init(
-            name: String,
-            description: String,
-            mintLimit: UInt64,
-            image: String,
-            imageModifier: String?,
-            layer: String,
-            artistId: UInt64,
-            royalties: [Royalty]
-        ) {
-            EQCollectibles.totalTemplates = EQCollectibles.totalTemplates + 1
-            self.id = EQCollectibles.totalTemplates
-            self.artistId = artistId
-            self.artistTemplate = EQCollectibles.incrementTemplateNumber(artistId: artistId)
-            self.name = name
-            self.description = description
-            self.mintLimit = mintLimit
-            self.ownedAccessories = true
-            self.image = image
-            self.imageModifier = imageModifier
-            self.layer = layer
-            self.royalties = royalties
-        }
-
-        pub fun updateImage(newImage: String) {
-            self.image = newImage
-        }
-        pub fun updateLayer(newLayer: String) {
-            self.layer = newLayer
-        }
-        pub fun updateDescription(newDescription: String) {
-            self.description = newDescription
-        }
-        pub fun updateName(newName: String){
-            self.name = newName
-        }
-        pub fun updateMintLimit(newLimit: UInt64){
-            self.mintLimit = newLimit
-        }
-
-        access(contract) fun setRoyalties(newRoyalties: [Royalty]){
-            self.royalties = newRoyalties
-        }
-    }
-    pub resource AccessoryTemplate {
-        pub let id: UInt64
-        pub let artistId: UInt64
-        pub let artistTemplate: UInt64
-        pub var applicableArtists: [UInt64]
-        pub var name: String
-        pub var description: String
-        pub var category: String
-        pub var mintLimit: UInt64
-        pub var image: String
-        pub var imageModifier: String?
-        pub var layer: String?
-        pub var royalties: [Royalty]
-
-        init(
-            artistId: UInt64,
-            name: String,
-            description: String,
-            category: String,
-            image: String,
-            imageModifier: String?,
-            layer: String,
-            mintLimit: UInt64,
-            royalties: [Royalty]
-        ) {
-            EQCollectibles.totalTemplates = EQCollectibles.totalTemplates + 1
-            self.id = EQCollectibles.totalTemplates
-            self.artistId = artistId
-            self.artistTemplate = EQCollectibles.incrementTemplateNumber(artistId: artistId)
-            self.applicableArtists = [artistId]
-            self.name = name
-            self.description = description
-            self.category = category
-            self.mintLimit = mintLimit
-            self.image = image
-            self.imageModifier = imageModifier
-            self.layer = layer
-            self.royalties = royalties
-        }
-
-        pub fun updateImage(newImage: String) {
-            self.image = newImage
-        }
-        pub fun updateLayer(newLayer: String) {
-            self.layer = newLayer
-        }
-        pub fun updateDescription(newDescription: String) {
-            self.description = newDescription
-        }
-        pub fun updateCategory(newCategory: String){
-            self.category = newCategory
-        }
-        pub fun updateName(newName: String){
-            self.name = newName
-        }
-        pub fun updateMintLimit(newLimit: UInt64){
-            self.mintLimit = newLimit
-        } 
-        pub fun addApplicableArtist(artistId: UInt64) {
-            self.applicableArtists.append(artistId)
-            log(self.applicableArtists)
-        }
-        access(contract) fun setRoyalties(newRoyalties: [Royalty]){
-            self.royalties = newRoyalties
-        }
-    }
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////CONTRACT ADMIN & INTERFACE
 
     pub resource Admin: ProfileCreation {
 
@@ -1381,7 +1371,18 @@ pub contract EQCollectibles: NonFungibleToken {
             return <- create NFT(template: template)    
         }
     }
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////FUNCTIONS
+
+    pub resource interface ProfileCreation {
+        pub fun createArtistProfile(            
+            account: AuthAccount,
+            name: String, 
+            description: String,
+            avatar: String,
+            royalties: [Royalty]
+        )
+    }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////CONTRACT FUNCTIONS
     pub fun createEmptyCollection(): @NonFungibleToken.Collection {
         return <- create Collection()
     }    
@@ -1579,7 +1580,7 @@ pub contract EQCollectibles: NonFungibleToken {
          return highestTemplateCut
     }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////INITIALIZER
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////CONTRACT INITIALIZER
     init() {
         self.CollectionPublicPath = /public/EQCollectibles
         self.CollectionStoragePath = /storage/EQCollectibles
