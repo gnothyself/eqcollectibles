@@ -1450,6 +1450,7 @@ pub contract EQCollectibles: NonFungibleToken {
         )
         self.totalMintedByTemplate[newTemplate.id] = 0
         self.account.borrow<&EQCollectibles.ArtistProfiles>(from: EQCollectibles.ProfilesStoragePath)!.borrowProfile(artistId: artistId)!.depositTemplate(template: <- newTemplate)
+        EQCollectibles.incrementTemplateNumber(artistId: artistId)
     }
 
     access(contract) fun createIconTemplate(
@@ -1476,6 +1477,7 @@ pub contract EQCollectibles: NonFungibleToken {
         )
         self.totalMintedByTemplate[newTemplate.id] = 0
         self.account.borrow<&EQCollectibles.ArtistProfiles>(from: EQCollectibles.ProfilesStoragePath)!.borrowProfile(artistId: artistId)!.depositTemplate(template: <- newTemplate)
+        EQCollectibles.incrementTemplateNumber(artistId: artistId)
     }
 
     access(contract) fun createAccessoryTemplate(
@@ -1501,7 +1503,8 @@ pub contract EQCollectibles: NonFungibleToken {
             royalties: royalties
         )
         self.totalMintedByTemplate[newTemplate.id] = 0
-        self.account.borrow<&EQCollectibles.ArtistProfiles>(from: EQCollectibles.ProfilesStoragePath)!.borrowProfile(artistId: artistId)!.depositTemplate(template: <- newTemplate)        
+        self.account.borrow<&EQCollectibles.ArtistProfiles>(from: EQCollectibles.ProfilesStoragePath)!.borrowProfile(artistId: artistId)!.depositTemplate(template: <- newTemplate)
+        EQCollectibles.incrementTemplateNumber(artistId: artistId)        
     }
 
     pub fun borrowProfile(artistId: UInt64): &Profile{PublicProfile}? {
@@ -1533,8 +1536,8 @@ pub contract EQCollectibles: NonFungibleToken {
     pub fun addAccessory(account: AuthAccount, iconId: UInt64, accessoryId: UInt64) {
 
         let collection: &Collection = account.borrow<&Collection>(from: self.CollectionStoragePath)!
-        let icon: &NFT{Icon} = collection.borrowIcon(id: iconId)!
-        let accessories: &AccessoryCollection = icon.accessAccessories()! 
+        let icon: &NFT{Icon} = collection.borrowIcon(id: iconId) ?? panic("There is no icon nft with this tokenId found here.")
+        // let accessories: &AccessoryCollection = icon.accessAccessories()! 
         let accessory: @NFT <- collection.withdrawAccessory(withdrawID: accessoryId)
 
         let accessorize <- icon.addAccessory(accessory: <- accessory)
@@ -1584,7 +1587,6 @@ pub contract EQCollectibles: NonFungibleToken {
                 log(highestTemplateCut)
             }
         }
-        log("highestTemplateCut: ".concat(highestTemplateCut.toString()))
          return highestTemplateCut
     }
 
