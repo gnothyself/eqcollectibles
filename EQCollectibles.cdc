@@ -1166,6 +1166,7 @@ pub contract EQCollectibles: NonFungibleToken {
         }
     } 
 
+    // This interface is used to expose public information about any NFT (Collectible, Icon, or Accessory).
     pub resource interface Public {
         pub let id: UInt64
         pub let name: String
@@ -1177,6 +1178,7 @@ pub contract EQCollectibles: NonFungibleToken {
         pub fun borrowAccessories(): [&NFT{Accessory}]?         
     }
 
+    // This interface restricts a an NFT to the information and functionatly relevant to an Icon @NFT. 
     pub resource interface Icon {
         pub let id: UInt64
         pub let artistId: UInt64
@@ -1191,6 +1193,7 @@ pub contract EQCollectibles: NonFungibleToken {
         pub fun getOwnedAccessoriesType(): Type
     }
 
+    // This interface restricts a an NFT to the information and functionatly relevant to an Accessory @NFT. 
     pub resource interface Accessory {
         pub let id: UInt64
         pub let artistId: UInt64
@@ -1201,6 +1204,9 @@ pub contract EQCollectibles: NonFungibleToken {
         pub var layer: String?
     }
 
+    // @AccessoryCollection is a full resource used to manage the accessory @NFTs that an icon @NFT owns. These accessories are used to compile the dynamic image of the owning icon.
+    // Accessories are stored in a dictionary using the accessory category (hat, jacket, pants) as the dictionary key. This is to prevent the icon from 'wearing' more than one of the 
+    // same kind of accessory. 
     pub resource AccessoryCollection: PublicAccessoryCollection {
         pub var ownedNFTs: @{String: NFT}
 
@@ -1242,6 +1248,8 @@ pub contract EQCollectibles: NonFungibleToken {
 
     }
 
+    // This interface is used to get information about the @NFTs that an icon owns. This will be used by the image compiler in EQs backend, as well as in marketplaces to list 
+    // which @NFTs are being sold with the listed icon @NFT.
     pub resource interface PublicAccessoryCollection {
         pub fun borrowNFT(category: String): &NFT{Accessory} 
         pub fun getCollectionDetails(): [&NFT{Accessory}]
