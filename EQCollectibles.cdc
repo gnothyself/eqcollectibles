@@ -2,7 +2,7 @@ import NonFungibleToken from "./NonFungibleToken.cdc"
 import MetadataViews from "./MetadataViews.cdc"
 import FungibleToken from "./FungibleToken.cdc"
 pub contract EQCollectibles: NonFungibleToken {
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////STORAGE PATHS
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////STORAGE PATHS & EVENTS
     pub let CollectionStoragePath: StoragePath
     pub let CollectionPublicPath: PublicPath
     pub let AdminStoragePath: StoragePath
@@ -10,7 +10,7 @@ pub contract EQCollectibles: NonFungibleToken {
     pub let ProfilesPublicPath: PublicPath
     pub let ProfilesPrivatePath: PrivatePath
     pub let AdminResourcesPath: StoragePath
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////EVENTS
+
     pub event ContractInitialized()
     pub event Withdraw(id: UInt64, from: Address?)
     pub event Deposit(id: UInt64, to: Address?)
