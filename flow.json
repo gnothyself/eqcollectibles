@@ -51,6 +51,18 @@
 			"aliases": {
 				"emulator": "0xf8d6e0586b0a20c7"
 			}
+		},
+		"RaptaIcon": {
+			"source": "./RaptaIcon.cdc",
+			"aliases": {
+				"emulator": "0xf8d6e0586b0a20c7"
+			}
+		},
+		"RaptaAccessory": {
+			"source": "./RaptaAccessory.cdc",
+			"aliases": {
+				"emulator": "0xf8d6e0586b0a20c7"
+			}
 		}
 	},
 	"deployments": {

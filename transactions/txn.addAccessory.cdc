@@ -1,4 +1,4 @@
-import EQCollectibles from "./EQCollectibles.cdc"
+import EQCollectibles from "../EQCollectibles.cdc"
 transaction(accessoryId: UInt64, iconId: UInt64){
     let acct: AuthAccount
     let template: EQCollectibles.TemplateData

@@ -1,4 +1,4 @@
-import EQCollectibles from "./EQCollectibles.cdc"
+import EQCollectibles from "../EQCollectibles.cdc"
 
 transaction(artistId: UInt64) {
   let dapp: &EQCollectibles.Admin
@@ -10,8 +10,7 @@ transaction(artistId: UInt64) {
 
   execute {
     //Mint Rapta Icon
-    self.dapp.lockProfile(artistId: artistId)
-    log("Profile ".concat(artistId.toString()).concat(" has been locked."))
+    self.dapp.unlockProfile(artistId: artistId)
+    log("Profile ".concat(artistId.toString()).concat(" has been unlocked."))
   }
 }
- 

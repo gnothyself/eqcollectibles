@@ -1,4 +1,4 @@
-import EQCollectibles from "./EQCollectibles.cdc"
+import EQCollectibles from "../EQCollectibles.cdc"
 transaction(artistId: UInt64, newName: String) {
 
     let profile: &EQCollectibles.Profile{EQCollectibles.AdminProfile}

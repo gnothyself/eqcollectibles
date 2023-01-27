@@ -1,5 +1,5 @@
-import EQCollectibles from "./EQCollectibles.cdc"
-import NonFungibleToken from "./NonFungibleToken.cdc"
+import EQCollectibles from "../EQCollectibles.cdc"
+import NonFungibleToken from "../NonFungibleToken.cdc"
 
 transaction(artistId: UInt64, relinkId: UInt64) {
 

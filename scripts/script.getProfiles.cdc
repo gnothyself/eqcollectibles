@@ -1,4 +1,4 @@
-import EQCollectibles from "./EQCollectibles.cdc"
+import EQCollectibles from "../EQCollectibles.cdc"
 
 pub fun main(): [&EQCollectibles.Profile{EQCollectibles.PublicProfile}] {
     let account = getAccount(0xf8d6e0586b0a20c7)

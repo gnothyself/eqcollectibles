@@ -1,6 +1,6 @@
-import EQCollectibles from "./EQCollectibles.cdc"
-import NonFungibleToken from "./NonFungibleToken.cdc"
-import MetadataViews from "./MetadataViews.cdc"
+import EQCollectibles from "../EQCollectibles.cdc"
+import NonFungibleToken from "../NonFungibleToken.cdc"
+import MetadataViews from "../MetadataViews.cdc"
 
 transaction(artistId: UInt64, templateId: UInt64) {
   let dapp: &EQCollectibles.Admin

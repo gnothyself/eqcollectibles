@@ -1,6 +1,6 @@
-import EQCollectibles from "./EQCollectibles.cdc"
-import NonFungibleToken from "./NonFungibleToken.cdc"
-import MetadataViews from "./MetadataViews.cdc"
+import EQCollectibles from "../EQCollectibles.cdc"
+import NonFungibleToken from "../NonFungibleToken.cdc"
+import MetadataViews from "../MetadataViews.cdc"
 
 transaction {
   let collection: &EQCollectibles.Collection

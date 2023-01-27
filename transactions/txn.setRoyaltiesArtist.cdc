@@ -1,8 +1,8 @@
-import EQCollectibles from "./EQCollectibles.cdc"
-import FungibleToken from "./FungibleToken.cdc"
-import MetadataViews from "./MetadataViews.cdc"
+import EQCollectibles from "../EQCollectibles.cdc"
+import FungibleToken from "../FungibleToken.cdc"
+import MetadataViews from "../MetadataViews.cdc"
 
-transaction(artistId: UInt64, templateId: UInt64, cut: UFix64 ) {
+transaction(artistId: UInt64, cut: UFix64 ) {
 
     let royalties: [EQCollectibles.Royalty]
     let adminResource: &EQCollectibles.PrimaryAdmin
@@ -16,6 +16,6 @@ transaction(artistId: UInt64, templateId: UInt64, cut: UFix64 ) {
     }
 
     execute {
-        self.adminResource.setTemplateRoyalties(templateId: templateId, newRoyalties: self.royalties)
+        self.adminResource.setProfileRoyalties(newRoyalties: self.royalties)
     }
 }

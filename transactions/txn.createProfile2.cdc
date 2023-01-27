@@ -1,7 +1,7 @@
-import EQCollectibles from "./EQCollectibles.cdc"
-import NonFungibleToken from "./NonFungibleToken.cdc"
-import FungibleToken from "./FungibleToken.cdc"
-import MetadataViews from "./MetadataViews.cdc"
+import EQCollectibles from "../EQCollectibles.cdc"
+import NonFungibleToken from "../NonFungibleToken.cdc"
+import FungibleToken from "../FungibleToken.cdc"
+import MetadataViews from "../MetadataViews.cdc"
 
 transaction() {
     let account: AuthAccount
@@ -13,29 +13,34 @@ transaction() {
         self.account = account
         self.royalties = [] 
 
-        let royalty = EQCollectibles.Royalty(
+        let royalty1 = EQCollectibles.Royalty(
             wallet: account.getCapability<&{FungibleToken.Receiver}>(MetadataViews.getRoyaltyReceiverPublicPath()), 
             cut: 0.025,
             type: EQCollectibles.RoyaltyType.percentage
         )
-        self.royalties.append(royalty)
+        self.royalties.append(royalty1)
+
+        let royalty2 = EQCollectibles.Royalty(
+            wallet: account.getCapability<&{FungibleToken.Receiver}>(MetadataViews.getRoyaltyReceiverPublicPath()), 
+            cut: 0.025,
+            type: EQCollectibles.RoyaltyType.percentage
+        )
+        self.royalties.append(royalty2)
 
         self.capability = dapp.getCapability<&EQCollectibles.Admin{EQCollectibles.ProfileCreation}>(/private/EQProfileCreation).borrow()!
 
     }
-    pre {
-    }
 
     execute {
-        self.capability.createArtistProfile( //artistProfile 1
+        self.capability.createArtistProfile( //artistProfile 2
             account: self.account,
-            name: "rapta", 
-            description: "rapta makes music",
-            avatar: "https://eqmusic.io/media/raptaCollect.png",
+            name: "eq keys", 
+            description: "all things eq", 
+            avatar: "https://eqmusic.io/media/eq.png",
             royalties: self.royalties
         )
-        
-        
+
+
         log("Artist Profiles Created")
     }
 }

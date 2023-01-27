@@ -1,4 +1,4 @@
-import EQCollectibles from "./EQCollectibles.cdc"
+import EQCollectibles from "../EQCollectibles.cdc"
 
 pub fun main(){
     let limit = EQCollectibles.royaltyLimit * 100.0

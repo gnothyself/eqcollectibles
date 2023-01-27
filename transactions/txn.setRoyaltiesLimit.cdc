@@ -1,6 +1,6 @@
-import EQCollectibles from "./EQCollectibles.cdc"
-import FungibleToken from "./FungibleToken.cdc"
-import MetadataViews from "./MetadataViews.cdc"
+import EQCollectibles from "../EQCollectibles.cdc"
+import FungibleToken from "../FungibleToken.cdc"
+import MetadataViews from "../MetadataViews.cdc"
 
 transaction(newLimit: UFix64) {
     let admin: &EQCollectibles.Admin

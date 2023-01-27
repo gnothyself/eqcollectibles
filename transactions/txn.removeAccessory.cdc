@@ -1,4 +1,4 @@
-import EQCollectibles from "./EQCollectibles.cdc"
+import EQCollectibles from "../EQCollectibles.cdc"
 transaction(category: String, iconId: UInt64){
 
     prepare(acct: AuthAccount) {

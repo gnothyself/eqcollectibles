@@ -1,4 +1,4 @@
-import EQCollectibles from "./EQCollectibles.cdc"
+import EQCollectibles from "../EQCollectibles.cdc"
 
 transaction(artistId: UInt64, newAdmin: Address) {
     prepare(admin: AuthAccount){

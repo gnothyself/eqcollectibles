@@ -1,5 +1,5 @@
-import EQCollectibles from "./EQCollectibles.cdc"
-import MetadataViews from "./MetadataViews.cdc"
+import EQCollectibles from "../EQCollectibles.cdc"
+import MetadataViews from "../MetadataViews.cdc"
 
 pub fun main(address: Address, id: UInt64): &EQCollectibles.NFT{EQCollectibles.Public} {
     let account = getAccount(address)
