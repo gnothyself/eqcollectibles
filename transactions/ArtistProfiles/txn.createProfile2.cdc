@@ -1,33 +1,33 @@
-import EQCollectibles from "../EQCollectibles.cdc"
-import NonFungibleToken from "../NonFungibleToken.cdc"
-import FungibleToken from "../FungibleToken.cdc"
-import MetadataViews from "../MetadataViews.cdc"
+import EQArtists from "../../EQArtists.cdc"
+import NonFungibleToken from "../../NonFungibleToken.cdc"
+import FungibleToken from "../../FungibleToken.cdc"
+import MetadataViews from "../../MetadataViews.cdc"
 
 transaction() {
     let account: AuthAccount
-    let royalties: [EQCollectibles.Royalty]
-    let capability: &EQCollectibles.Admin{EQCollectibles.ProfileCreation}
+    let royalties: [EQArtists.Royalty]
+    let capability: &EQArtists.Admin{EQArtists.ProfileCreation}
 
     prepare(account: AuthAccount, dapp: AuthAccount){
         log("Creating Artist Profiles")
         self.account = account
         self.royalties = [] 
 
-        let royalty1 = EQCollectibles.Royalty(
+        let royalty1 = EQArtists.Royalty(
             wallet: account.getCapability<&{FungibleToken.Receiver}>(MetadataViews.getRoyaltyReceiverPublicPath()), 
             cut: 0.025,
-            type: EQCollectibles.RoyaltyType.percentage
+            type: EQArtists.RoyaltyType.percentage
         )
         self.royalties.append(royalty1)
 
-        let royalty2 = EQCollectibles.Royalty(
+        let royalty2 = EQArtists.Royalty(
             wallet: account.getCapability<&{FungibleToken.Receiver}>(MetadataViews.getRoyaltyReceiverPublicPath()), 
             cut: 0.025,
-            type: EQCollectibles.RoyaltyType.percentage
+            type: EQArtists.RoyaltyType.percentage
         )
         self.royalties.append(royalty2)
 
-        self.capability = dapp.getCapability<&EQCollectibles.Admin{EQCollectibles.ProfileCreation}>(/private/EQProfileCreation).borrow()!
+        self.capability = dapp.getCapability<&EQArtists.Admin{EQArtists.ProfileCreation}>(/private/EQProfileCreation).borrow()!
 
     }
 

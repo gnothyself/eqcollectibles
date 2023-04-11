@@ -1,10 +1,10 @@
-import EQCollectibles from "../EQCollectibles.cdc"
+import EQArtists from "../../EQArtists.cdc"
 transaction(artistId: UInt64, newName: String) {
 
-    let profile: &EQCollectibles.Profile{EQCollectibles.AdminProfile}
+    let profile: &EQArtists.Profile{EQArtists.AdminProfile}
 
     prepare(account: AuthAccount){
-        let adminResources = account.borrow<&EQCollectibles.AdminResources>(from: EQCollectibles.AdminResourcesPath)!
+        let adminResources = account.borrow<&EQArtists.AdminResources>(from: EQArtists.AdminResourcesPath)!
         self.profile = adminResources.borrowProfile(artistId: artistId) ?? panic("this account does not have administrative access to this profile")
     }
 
@@ -12,3 +12,4 @@ transaction(artistId: UInt64, newName: String) {
         self.profile.changeName(newName: newName)
     }
 }
+ 

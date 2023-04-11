@@ -1,6 +1,7 @@
-import NonFungibleToken from "./NonFungibleToken.cdc"
 import MetadataViews from "./MetadataViews.cdc"
+import NonFungibleToken from "./NonFungibleToken.cdc"
 import FungibleToken from "./FungibleToken.cdc"
+
 pub contract EQCollectibles: NonFungibleToken {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////STORAGE PATHS & EVENTS
     pub let CollectionStoragePath: StoragePath
@@ -170,6 +171,11 @@ pub contract EQCollectibles: NonFungibleToken {
                     let oldTemplate <- self.collectibleTemplates[template.id] <- template
                     destroy oldTemplate
 
+                case Type<@EQCollectibles.TicketTemplate>():
+					let template <- template as! @TicketTemplate
+					let oldTemplate <- self.collectibleTemplates[template.id] <- template
+					destroy oldTemplate
+
                 case Type<@EQCollectibles.IconTemplate>():
                     let template <- template as! @IconTemplate
                     // let id: UInt64 = template.id
@@ -241,6 +247,22 @@ pub contract EQCollectibles: NonFungibleToken {
                             category: template.category ,
                             royalties: template.royalties 
                         )  
+                    case Type<@EQCollectibles.TicketTemplate?>():
+						let template = self.borrowTicketTemplate(templateId: templateId)
+						return TemplateData(
+								id: templateId,
+								artistId: template.artistId,
+								applicableArtists: nil,
+								name: template.name,
+								description: template.description,
+								image: template.image,
+								imageModifier: template.imageModifier,
+								mintLimit: template.mintLimit,
+								ownsAccessories: false,
+								layer: nil,
+								category: nil ,
+								royalties: template.royalties
+					);
 
                     default:
                         log("could not borrow template")
@@ -254,6 +276,13 @@ pub contract EQCollectibles: NonFungibleToken {
         pub fun getTotalTemplates(): Int {
             return self.collectibleTemplates.length
         }
+
+        access(contract) fun borrowTicketTemplate(templateId: UInt64): &TicketTemplate {
+			log("borrowing collectible")
+			let ref = &self.collectibleTemplates[templateId] as auth &AnyResource
+			let template = ref as! &TicketTemplate
+			return template
+		}
 
         access(contract) fun borrowCollectibleTemplate(templateId: UInt64): &CollectibleTemplate {           
             log("borrowing collectible")
@@ -381,7 +410,7 @@ pub contract EQCollectibles: NonFungibleToken {
         pub fun changeAvatar(newAvatar: String)
         pub fun addApplicableArtistToTemplate(templateId: UInt64, artistId: UInt64)
         pub fun getCollectibleType(templateId: UInt64): Type?
-        pub fun borrowTemplate(templateId: UInt64): &AnyResource
+        pub fun borrowTemplate(templateId: UInt64): auth &AnyResource
         access(contract) fun setRoyalties(newRoyalties: [Royalty])
     }
 
@@ -710,6 +739,54 @@ pub contract EQCollectibles: NonFungibleToken {
         }
     }
 
+    	pub resource TicketTemplate {
+		pub let id: UInt64
+		pub let artistId: UInt64
+		pub var name: String
+		pub var description: String
+		pub var image: String
+		pub var imageModifier: String?
+		pub var mintLimit: UInt64
+		pub var royalties: [Royalty]
+
+		init(
+			artistId: UInt64,
+			name: String,
+			description: String,
+			image: String,
+			imageModifier: String?,
+			mintLimit: UInt64,
+			royalties: [Royalty]
+		) {
+			EQCollectibles.totalTemplates = EQCollectibles.totalTemplates + 1
+			self.id = EQCollectibles.totalTemplates
+			self.artistId = artistId
+			self.name = name
+			self.description = description
+			self.mintLimit = mintLimit
+			self.image = image
+			self.imageModifier = imageModifier
+			self.royalties = royalties
+		}
+
+		pub fun updateImage(newImage: String) {
+			self.image = newImage
+		}
+		pub fun updateDescription(newDescription: String) {
+			self.description = newDescription
+		}
+		pub fun updateName(newName: String){
+			self.name = newName
+		}
+		pub fun updateMintLimit(newLimit: UInt64){
+			self.mintLimit = newLimit
+		}
+
+		access(contract) fun setRoyalties(newRoyalties: [Royalty]){
+			self.royalties = newRoyalties
+		}
+	}
+
     // The @IconTemplate is used for EQ Icons. Icons are composable NFTs meant to represent the artist. The image field for an Icon is not an IPFS address, but rather an eqmusic.io
     // address. The EQ backend composes the image based on the layer field (the base layer of the composable NFT) and the layers of each accessory (@AccessoryTemplate) held in the 
     // icon @NFT's @AccessoryCollection. In the template, the boolean field ownedAccessories determines if the @NFT initializer should create an @AccessoryCollection for the @NFT.
@@ -1027,6 +1104,10 @@ pub contract EQCollectibles: NonFungibleToken {
         pub fun getID(): UInt64 {
             return self.id
         }
+
+        pub fun getCollectionId(): UInt64 {
+            return self.collectionId
+        }
         pub fun getName(): String {
             return self.name
         }
@@ -1087,7 +1168,7 @@ pub contract EQCollectibles: NonFungibleToken {
             switch view {
                 case Type<MetadataViews.Display>():
                     return MetadataViews.Display(
-                        name: self.name.concat(" #").concat(self.collectionId.toString()),
+                        name: self.name.concat(" ").concat(self.collectionId.toString()),
                         description: self.description,
                         thumbnail: MetadataViews.HTTPFile(
                         url: EQCollectibles.borrowProfile(artistId: self.artistId)!.getImageURL(templateId: self.templateId, nftId: self.collectionId)!
@@ -1175,7 +1256,9 @@ pub contract EQCollectibles: NonFungibleToken {
         pub let templateId: UInt64
         pub var category: String?
 
-        pub fun borrowAccessories(): [&NFT{Accessory}]?         
+        pub fun resolveView(_ view: Type): AnyStruct?
+        pub fun borrowAccessories(): [&NFT{Accessory}]?      
+        pub fun getCollectionId(): UInt64   
     }
 
     // This interface restricts a an NFT to the information and functionatly relevant to an Icon @NFT. 
